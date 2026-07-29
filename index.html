@@ -150,10 +150,21 @@
     /* ============ Tabs (albums) ============ */
     .tabs-bar {
       display: flex; align-items: flex-end; gap: 8px;
-      padding: 20px 40px 0 56px; overflow-x: auto;
+      padding: 20px 40px 6px 56px; overflow-x: auto;
       background: rgba(255,255,255,0.2);
+      cursor: grab;
+      user-select: none;
     }
-    .tabs-bar::-webkit-scrollbar { height: 0px; }
+    .tabs-bar.active-drag {
+      cursor: grabbing;
+    }
+    .tabs-bar.active-drag .tab {
+      cursor: grabbing;
+    }
+    .tabs-bar::-webkit-scrollbar { height: 6px; }
+    .tabs-bar::-webkit-scrollbar-track { background: rgba(255,255,255,0.1); border-radius: 3px; }
+    .tabs-bar::-webkit-scrollbar-thumb { background: rgba(255,128,171,0.3); border-radius: 3px; }
+    .tabs-bar::-webkit-scrollbar-thumb:hover { background: rgba(255,128,171,0.6); }
 
     .tab {
       flex-shrink: 0;
@@ -454,13 +465,13 @@
     </main>
   </div>
 
-  <input type="file" id="fileInput" accept="image/*" multiple hidden>
+  <input type="file" id="fileInput" accept="image/*,video/*" multiple hidden>
 
   <div class="lightbox" id="lightbox">
     <button class="lb-close" id="lbClose" aria-label="Đóng">×</button>
     <button class="lb-prev" id="lbPrev" aria-label="Ảnh trước">‹</button>
     <button class="lb-next" id="lbNext" aria-label="Ảnh sau">›</button>
-    <div class="lb-page"><img id="lbImage" alt=""></div>
+    <div class="lb-page" id="lbContent"></div>
     <div class="lb-caption-row">
       <span class="lb-caption" id="lbCaption">—</span>
       <span class="lb-meta" id="lbMeta">—</span>
@@ -512,7 +523,7 @@
       const toastEl = document.getElementById('toast');
 
       const lightbox = document.getElementById('lightbox');
-      const lbImage = document.getElementById('lbImage');
+      const lbContent = document.getElementById('lbContent');
       const lbCaption = document.getElementById('lbCaption');
       const lbMeta = document.getElementById('lbMeta');
       const lbDownload = document.getElementById('lbDownload');
@@ -529,6 +540,12 @@
       let lbIndex = -1;
       let isSelectMode = false;
       let selectedPhotos = new Set();
+
+      // Drag-to-scroll variables for desktop
+      let isDown = false;
+      let startX;
+      let scrollLeft;
+      let hasDragged = false;
 
       let toastTimer = null;
       function toast(msg) {
@@ -568,6 +585,10 @@
             '<span class="n">(' + count + ')</span>' +
             '<span class="tab-del" title="Xoá album">✕</span>';
           tab.addEventListener('click', (e) => {
+            if (hasDragged) {
+              e.preventDefault();
+              return;
+            }
             if (e.target.classList.contains('tab-del')) {
               e.stopPropagation();
               deleteAlbum(a.id);
@@ -599,7 +620,17 @@
       function renderPage() {
         pageArea.innerHTML = '';
         const total = photos.length;
-        totalCount.textContent = total + ' ảnh · ' + albums.length + ' album';
+        const imgCount = photos.filter(p => !p.resourceType || p.resourceType === 'image').length;
+        const vidCount = photos.filter(p => p.resourceType === 'video').length;
+        let countText = '';
+        if (imgCount > 0 && vidCount > 0) {
+          countText = `${imgCount} ảnh, ${vidCount} video`;
+        } else if (vidCount > 0) {
+          countText = `${vidCount} video`;
+        } else {
+          countText = `${imgCount} ảnh`;
+        }
+        totalCount.textContent = countText + ' · ' + albums.length + ' album';
 
         if (!albums.length) {
           pageArea.innerHTML =
@@ -618,17 +649,72 @@
         const album = albums.find(a => a.id === currentAlbumId) || albums[0];
         currentAlbumId = album.id;
         const albumPhotos = photos.filter(p => p.albumId === album.id).sort((a, b) => b.date - a.date);
+        const albumImgCount = albumPhotos.filter(p => !p.resourceType || p.resourceType === 'image').length;
+        const albumVidCount = albumPhotos.filter(p => p.resourceType === 'video').length;
+        let albumCountText = '';
+        if (albumImgCount > 0 && albumVidCount > 0) {
+          albumCountText = `${albumImgCount} ảnh, ${albumVidCount} video`;
+        } else if (albumVidCount > 0) {
+          albumCountText = `${albumVidCount} video`;
+        } else {
+          albumCountText = `${albumImgCount} ảnh`;
+        }
 
         const head = document.createElement('div');
         head.className = 'page-head';
         const btnText = isSelectMode ? 'Hủy chọn' : 'Chọn nhiều ảnh';
         const selectBtnHTML = albumPhotos.length > 0 ? `<button class="btn ghost" id="btnToggleSelect" style="padding: 4px 12px; font-size: 12px;">${btnText}</button>` : '';
         head.innerHTML =
-          '<h2 class="page-title"><span class="dot" style="background:' + album.color + '"></span>' + escapeHtml(album.name) + '</h2>' +
+          '<h2 class="page-title"><span class="dot" style="background:' + album.color + '"></span>' +
+          '<span class="album-name-text">' + escapeHtml(album.name) + '</span>' +
+          '<span class="btn-rename-album" title="Sửa tên album" style="font-size: 18px; cursor: pointer; opacity: 0.6; margin-left: 8px; transition: 0.2s;">✏️</span></h2>' +
           '<div style="display:flex; gap:10px; align-items:center;">' +
-          '<span class="page-sub">' + albumPhotos.length + ' tấm ảnh</span>' + selectBtnHTML +
+          '<span class="page-sub">' + albumCountText + '</span>' + selectBtnHTML +
           '</div>';
         pageArea.appendChild(head);
+
+        const btnRename = head.querySelector('.btn-rename-album');
+        if (btnRename) {
+          btnRename.addEventListener('click', () => {
+            const nameSpan = head.querySelector('.album-name-text');
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = album.name;
+            input.style.fontSize = '24px';
+            input.style.fontFamily = "'Dancing Script', cursive";
+            input.style.fontWeight = '700';
+            input.style.border = '1px dashed var(--accent)';
+            input.style.background = 'rgba(255,255,255,0.8)';
+            input.style.borderRadius = '8px';
+            input.style.padding = '2px 8px';
+            input.style.color = 'var(--text-main)';
+            input.style.outline = 'none';
+            input.maxLength = 40;
+
+            nameSpan.replaceWith(input);
+            btnRename.style.display = 'none';
+            input.focus();
+            input.select();
+
+            let finished = false;
+            const finishEdit = async () => {
+              if (finished) return;
+              finished = true;
+              const val = input.value.trim();
+              if (val && val !== album.name) {
+                await renameAlbum(album.id, val);
+              } else {
+                renderAll();
+              }
+            };
+
+            input.addEventListener('keydown', (e) => {
+              if (e.key === 'Enter') finishEdit();
+              if (e.key === 'Escape') { finished = true; renderAll(); }
+            });
+            input.addEventListener('blur', finishEdit);
+          });
+        }
 
         if (albumPhotos.length > 0) {
           document.getElementById('btnToggleSelect').addEventListener('click', () => {
@@ -655,7 +741,11 @@
           sliderPhotos.forEach((p, i) => {
             const slide = document.createElement('div');
             slide.className = 'slider-slide';
-            slide.innerHTML = `<img class="slider-img" src="${p.dataUrl}" alt="slide"><div class="slider-caption">${escapeHtml(p.caption || p.name)}</div>`;
+            if (p.resourceType === 'video') {
+              slide.innerHTML = `<video class="slider-img" src="${p.dataUrl}" muted loop playsinline autoplay style="object-fit: cover; width: 100%; height: 100%;"></video><div class="slider-caption">${escapeHtml(p.caption || p.name)}</div>`;
+            } else {
+              slide.innerHTML = `<img class="slider-img" src="${p.dataUrl}" alt="slide"><div class="slider-caption">${escapeHtml(p.caption || p.name)}</div>`;
+            }
             track.appendChild(slide);
             
             const dot = document.createElement('div');
@@ -709,9 +799,44 @@
           tape.textContent = '📌';
           card.appendChild(tape);
 
-          const img = document.createElement('img');
-          img.src = p.dataUrl; img.alt = p.name; img.loading = 'lazy';
-          img.addEventListener('click', () => {
+          let mediaEl;
+          if (p.resourceType === 'video') {
+            const videoContainer = document.createElement('div');
+            videoContainer.style.position = 'relative';
+            videoContainer.style.width = '100%';
+            videoContainer.style.aspectRatio = '1/1';
+            videoContainer.style.borderRadius = '8px';
+            videoContainer.style.overflow = 'hidden';
+
+            const video = document.createElement('video');
+            video.src = p.dataUrl;
+            video.style.width = '100%';
+            video.style.height = '100%';
+            video.style.objectFit = 'cover';
+            video.preload = 'metadata';
+            
+            const playOverlay = document.createElement('div');
+            playOverlay.innerHTML = '▶️';
+            playOverlay.style.position = 'absolute';
+            playOverlay.style.inset = '0';
+            playOverlay.style.display = 'flex';
+            playOverlay.style.alignItems = 'center';
+            playOverlay.style.justifyContent = 'center';
+            playOverlay.style.fontSize = '32px';
+            playOverlay.style.background = 'rgba(0,0,0,0.2)';
+            playOverlay.style.color = 'white';
+            playOverlay.style.pointerEvents = 'none';
+
+            videoContainer.appendChild(video);
+            videoContainer.appendChild(playOverlay);
+            mediaEl = videoContainer;
+          } else {
+            const img = document.createElement('img');
+            img.src = p.dataUrl; img.alt = p.name; img.loading = 'lazy';
+            mediaEl = img;
+          }
+
+          mediaEl.addEventListener('click', () => {
             if (isSelectMode) {
               if (selectedPhotos.has(p.id)) {
                 selectedPhotos.delete(p.id);
@@ -725,7 +850,7 @@
               openLightbox(album.id, p.id);
             }
           });
-          card.appendChild(img);
+          card.appendChild(mediaEl);
 
           const capWrap = document.createElement('div');
           capWrap.className = 'caption-wrap';
@@ -813,6 +938,18 @@
         }
       }
 
+      async function renameAlbum(id, newName) {
+        newName = newName.trim();
+        if (!newName) { toast('Tên album không được để trống.'); return; }
+        const a = albums.find(x => x.id === id);
+        if (!a) return;
+        a.name = newName;
+        const ok = await saveAlbum(a);
+        if (ok) {
+          toast('Đã đổi tên album thành "' + newName + '".');
+        }
+      }
+
       async function deleteAlbum(id) {
         const a = albums.find(x => x.id === id);
         if (!a) return;
@@ -846,7 +983,7 @@
       const CLOUDINARY_UPLOAD_PRESET = 'upload_present_image'; // Đổi thành Upload Preset của bạn (loại Unsigned)
 
       async function uploadToCloudinary(file) {
-        const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+        const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`;
         const fd = new FormData();
         fd.append('file', file);
         fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
@@ -873,11 +1010,12 @@
           albumId,
           name: file.name,
           dataUrl: uploadData.secure_url,
-          width: uploadData.width,
-          height: uploadData.height,
+          width: uploadData.width || 0,
+          height: uploadData.height || 0,
           size: uploadData.bytes,
           date: Date.now(),
-          caption: ''
+          caption: '',
+          resourceType: uploadData.resource_type || 'image'
         };
       }
 
@@ -915,9 +1053,9 @@
 
       async function handleFiles(fileList) {
         if (!currentAlbumId) { toast('Hãy tạo hoặc chọn một album trước.'); return; }
-        const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
-        if (!files.length) { toast('Vui lòng chọn tệp ảnh hợp lệ.'); return; }
-        toast('Đang tải lên ' + files.length + ' ảnh (xin chờ một chút)…');
+        const files = Array.from(fileList).filter(f => f.type.startsWith('image/') || f.type.startsWith('video/'));
+        if (!files.length) { toast('Vui lòng chọn tệp ảnh hoặc video hợp lệ.'); return; }
+        toast('Đang tải lên ' + files.length + ' tệp (xin chờ một chút)…');
         let ok = 0;
         const CHUNK_SIZE = 5;
         for (let i = 0; i < files.length; i += CHUNK_SIZE) {
@@ -931,7 +1069,7 @@
           });
           await Promise.all(promises);
         }
-        if (ok) toast('Đã lưu thành công ' + ok + ' ảnh.');
+        if (ok) toast('Đã lưu thành công ' + ok + ' tệp.');
       }
 
       fileInput.addEventListener('change', (e) => {
@@ -944,6 +1082,37 @@
       newAlbumName.addEventListener('keydown', (e) => { if (e.key === 'Enter') createAlbum(newAlbumName.value, selectedColor); });
       btnCancelAlbum.addEventListener('click', () => newAlbumPanel.classList.remove('show'));
 
+      // Drag to scroll logic for tabsBar
+      tabsBar.addEventListener('mousedown', (e) => {
+        if (e.target.classList.contains('tab-del')) return;
+        isDown = true;
+        hasDragged = false;
+        tabsBar.classList.add('active-drag');
+        startX = e.pageX - tabsBar.offsetLeft;
+        scrollLeft = tabsBar.scrollLeft;
+      });
+
+      tabsBar.addEventListener('mouseleave', () => {
+        isDown = false;
+        tabsBar.classList.remove('active-drag');
+      });
+
+      tabsBar.addEventListener('mouseup', () => {
+        isDown = false;
+        tabsBar.classList.remove('active-drag');
+      });
+
+      tabsBar.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - tabsBar.offsetLeft;
+        const walk = (x - startX) * 1.5;
+        if (Math.abs(x - startX) > 5) {
+          hasDragged = true;
+        }
+        tabsBar.scrollLeft = scrollLeft - walk;
+      });
+
       // ---------------- Lightbox ----------------
       function openLightbox(albumId, photoId) {
         lbList = photos.filter(p => p.albumId === albumId).sort((a, b) => b.date - a.date);
@@ -955,9 +1124,29 @@
       function showLb() {
         const p = lbList[lbIndex];
         if (!p) return closeLb();
-        lbImage.src = p.dataUrl; lbImage.alt = p.name;
+        lbContent.innerHTML = '';
+        if (p.resourceType === 'video') {
+          const video = document.createElement('video');
+          video.src = p.dataUrl;
+          video.controls = true;
+          video.autoplay = true;
+          video.style.maxWidth = '100%';
+          video.style.maxHeight = '65vh';
+          video.style.display = 'block';
+          video.style.borderRadius = '8px';
+          lbContent.appendChild(video);
+        } else {
+          const img = document.createElement('img');
+          img.src = p.dataUrl;
+          img.alt = p.name;
+          img.style.maxWidth = '100%';
+          img.style.maxHeight = '65vh';
+          img.style.display = 'block';
+          img.style.borderRadius = '8px';
+          lbContent.appendChild(img);
+        }
         lbCaption.textContent = p.caption && p.caption.trim() ? p.caption : p.name;
-        lbMeta.textContent = p.width + '×' + p.height + ' · ' + fmtBytes(p.size) + ' · ' + new Date(p.date).toLocaleDateString('vi-VN');
+        lbMeta.textContent = (p.width && p.height ? p.width + '×' + p.height + ' · ' : '') + fmtBytes(p.size) + ' · ' + new Date(p.date).toLocaleDateString('vi-VN');
         lbDownload.href = 'javascript:void(0)';
       }
       function closeLb() { lightbox.classList.remove('open'); document.body.style.overflow = ''; lbIndex = -1; }
