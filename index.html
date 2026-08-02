@@ -2267,6 +2267,26 @@
       lbTagsInput.value = p.tags ? p.tags.join(' ') : '';
       lbUnlockDateInput.value = p.unlockDate ? p.unlockDate : '';
 
+      // Sticker remove button visibility
+      const btnLbRemoveStickers = document.getElementById('btnLbRemoveStickers');
+      if (btnLbRemoveStickers) {
+        btnLbRemoveStickers.style.display = (p.stickers && p.stickers.length) ? 'inline-flex' : 'none';
+      }
+
+      // Voice Note remove & audio player visibility
+      const btnLbRemoveVoice = document.getElementById('btnLbRemoveVoice');
+      const lbVoicePlayer = document.getElementById('lbVoicePlayer');
+      if (p.audioData) {
+        if (btnLbRemoveVoice) btnLbRemoveVoice.style.display = 'inline-flex';
+        if (lbVoicePlayer) {
+          lbVoicePlayer.style.display = 'block';
+          lbVoicePlayer.src = p.audioData;
+        }
+      } else {
+        if (btnLbRemoveVoice) btnLbRemoveVoice.style.display = 'none';
+        if (lbVoicePlayer) lbVoicePlayer.style.display = 'none';
+      }
+
       // Sync Realtime Comments & Reactions
       loadRealtimeCommentsAndReactions(p.id);
     }
@@ -2329,6 +2349,26 @@
       palette.style.display = palette.style.display === 'none' ? 'flex' : 'none';
     });
 
+    document.getElementById('btnLbRemoveStickers').addEventListener('click', async () => {
+      const p = lbList[lbIndex];
+      if (!p) return;
+      p.stickers = [];
+      await savePhoto(p);
+      toast('Đã xoá toàn bộ Sticker khỏi ảnh! 🧹');
+      showLb();
+      renderPage();
+    });
+
+    document.getElementById('btnLbRemoveVoice').addEventListener('click', async () => {
+      const p = lbList[lbIndex];
+      if (!p) return;
+      delete p.audioData;
+      await savePhoto(p);
+      toast('Đã xoá Voice Note khỏi ảnh! 🗑️');
+      showLb();
+      renderPage();
+    });
+
     document.querySelectorAll('#stickerPalette .sticker-item').forEach(item => {
       item.addEventListener('click', async () => {
         const p = lbList[lbIndex];
@@ -2337,6 +2377,7 @@
         p.stickers.push({ emoji: item.dataset.emoji, x: Math.floor(Math.random() * 70 + 10), y: Math.floor(Math.random() * 70 + 10) });
         await savePhoto(p);
         toast(`Đã dán sticker ${item.dataset.emoji}! 🌸`);
+        showLb();
         renderPage();
       });
     });
@@ -2358,6 +2399,7 @@
             p.audioData = reader.result;
             await savePhoto(p);
             toast('Đã lưu Voice Note thành công! 🎙️');
+            showLb();
             renderPage();
           };
         };
