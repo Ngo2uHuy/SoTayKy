@@ -831,6 +831,58 @@
     .wheel-pointer { font-size: 32px; margin-bottom: -24px; z-index: 10; transform: rotate(180deg); }
     .wheel-result { font-family: 'Dancing Script', cursive; font-size: 26px; font-weight: 700; color: var(--accent-hover); min-height: 36px; }
 
+    /* 3D Realistic Book CSS */
+    .real-book-shell {
+      perspective: 1600px;
+      width: 100%;
+      margin: 10px auto;
+      user-select: none;
+    }
+    .book-spine-wrapper {
+      display: flex;
+      width: 100%;
+      height: 380px;
+      background: radial-gradient(circle at center, #fffdf8, #f5ebd9);
+      border-radius: 16px;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.25), inset 0 0 20px rgba(0,0,0,0.08);
+      position: relative;
+      border: 8px solid #5d4037;
+      overflow: hidden;
+    }
+    .book-page-half {
+      flex: 1;
+      height: 100%;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      background: radial-gradient(circle at center, #fffdf8, #f5ebd9);
+    }
+    .book-page-left {
+      border-right: 2px solid rgba(0,0,0,0.12);
+      box-shadow: inset -12px 0 16px -6px rgba(0,0,0,0.12);
+    }
+    .book-page-right {
+      box-shadow: inset 12px 0 16px -6px rgba(0,0,0,0.12);
+    }
+    .book-spine-line {
+      position: absolute; left: 50%; top: 0; bottom: 0; width: 6px;
+      transform: translateX(-50%);
+      background: linear-gradient(to right, rgba(0,0,0,0.3), rgba(255,255,255,0.5), rgba(0,0,0,0.3));
+      z-index: 10;
+    }
+    .flip-animating-leaf {
+      position: absolute; right: 0; top: 0; width: 50%; height: 100%;
+      background: radial-gradient(circle at center, #fffdf8, #f5ebd9);
+      transform-origin: left center;
+      transition: transform 0.6s cubic-bezier(0.645, 0.045, 0.355, 1);
+      z-index: 9;
+      backface-visibility: hidden;
+      box-shadow: -5px 0 20px rgba(0,0,0,0.25);
+    }
+
     /* 3D Flipbook Modal Styling */
     .flipbook-wrap {
       perspective: 1200px;
@@ -1147,26 +1199,44 @@
 
   <!-- 3D Flipbook Modal -->
   <div class="modal-overlay" id="flipbookModal">
-    <div class="modal-card" style="max-width: 680px;" id="printableBookCard">
+    <div class="modal-card" style="max-width: 840px; padding: 24px; background: rgba(255,255,255,0.95);" id="printableBookCard">
       <button class="modal-close-btn" id="btnCloseFlipbook">×</button>
-      <h2 class="modal-title">Sổ Lật 3D Kỷ Niệm 📖</h2>
-      <p style="font-size: 13px; color: var(--text-light); margin-bottom: 12px;">Lật từng trang xem lại khoảnh khắc đáng nhớ.</p>
+      <h2 class="modal-title" style="text-align: center;">Sổ Lật 3D Kỷ Niệm 📖</h2>
+      <p style="font-size: 13px; color: var(--text-light); text-align: center; margin-bottom: 12px;">Lật từng trang sách ảnh kỷ niệm sống động như thật (có âm thanh lật trang).</p>
 
-      <div class="flipbook-wrap">
-        <div class="flip-page-card" id="flipPageContent">
-          <img id="flipImg" src="" alt="flipbook">
-          <div class="flip-page-title" id="flipTitle">Kỷ niệm</div>
-          <span style="font-size: 11px; opacity: 0.7; margin-top: 4px;" id="flipDate">--/--/----</span>
+      <!-- Realistic 3D Opened Book Container -->
+      <div class="real-book-shell">
+        <div class="book-spine-wrapper" id="bookSpineWrap">
+          <div class="book-spine-line"></div>
+
+          <!-- Left Page -->
+          <div class="book-page-half book-page-left" id="bookPageLeft">
+            <img id="flipImgLeft" src="" style="width: 85%; aspect-ratio: 1/1; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+            <div id="flipTitleLeft" style="font-family: 'Dancing Script', cursive; font-size: 22px; font-weight: 700; margin-top: 8px; color: #4a3b32;">--</div>
+            <span id="flipDateLeft" style="font-size: 10px; opacity: 0.7; margin-top: 2px;">--</span>
+            <span style="position: absolute; bottom: 8px; left: 12px; font-size: 10px; opacity: 0.5;" id="pageNumLeft">Trang 1</span>
+          </div>
+
+          <!-- Right Page -->
+          <div class="book-page-half book-page-right" id="bookPageRight">
+            <img id="flipImgRight" src="" style="width: 85%; aspect-ratio: 1/1; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+            <div id="flipTitleRight" style="font-family: 'Dancing Script', cursive; font-size: 22px; font-weight: 700; margin-top: 8px; color: #4a3b32;">--</div>
+            <span id="flipDateRight" style="font-size: 10px; opacity: 0.7; margin-top: 2px;">--</span>
+            <span style="position: absolute; bottom: 8px; right: 12px; font-size: 10px; opacity: 0.5;" id="pageNumRight">Trang 2</span>
+          </div>
+
+          <!-- Animated Flipping Leaf -->
+          <div class="flip-animating-leaf" id="flipLeaf" style="display: none;"></div>
         </div>
       </div>
 
       <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px;">
-        <button class="btn ghost" id="btnFlipPrev">‹ Trang trước</button>
-        <span id="flipPageNum" style="font-size: 12px; font-weight: 600;">Trang 1</span>
-        <button class="btn ghost" id="btnFlipNext">Trang sau ›</button>
+        <button class="btn ghost" id="btnFlipPrev">◀️ Trang trước</button>
+        <span id="flipPageNum" style="font-size: 13px; font-weight: 600; color: var(--accent);">Lật trang 1 - 2</span>
+        <button class="btn ghost" id="btnFlipNext">Trang sau ▶️</button>
       </div>
 
-      <button class="btn" id="btnExportPDF" style="width: 100%; margin-top: 16px; background: linear-gradient(135deg, #00acc1, #00838f);">📄 Xuất Sổ Kỷ Niệm PDF</button>
+      <button class="btn" id="btnExportPDF" style="width: 100%; margin-top: 16px; background: linear-gradient(135deg, #00acc1, #00838f); padding: 10px 20px;">📄 Xuất Sổ Kỷ Niệm PDF</button>
     </div>
   </div>
 
@@ -2759,29 +2829,108 @@
 
     // ---------------- 3D Flipbook Modal & PDF Export ----------------
     const flipbookModal = document.getElementById('flipbookModal');
-    let flipIndex = 0;
+    let flipPairIndex = 0;
 
     document.getElementById('btnOpenFlipbook').addEventListener('click', () => {
       flipbookModal.classList.add('open');
-      flipIndex = 0;
+      flipPairIndex = 0;
       showFlipPage();
     });
     document.getElementById('btnCloseFlipbook').addEventListener('click', () => flipbookModal.classList.remove('open'));
 
+    function playPageFlipSound() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const bufferSize = ctx.sampleRate * 0.12;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.25));
+        }
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 1200;
+        noise.connect(filter);
+        filter.connect(ctx.destination);
+        noise.start();
+      } catch (e) {}
+    }
+
     function showFlipPage() {
-      if (!photos.length) return;
-      const p = photos[flipIndex];
-      document.getElementById('flipImg').src = p.dataUrl;
-      document.getElementById('flipTitle').textContent = p.caption || p.name;
-      document.getElementById('flipDate').textContent = new Date(p.date).toLocaleDateString('vi-VN') + (p.location && p.location.name ? ` · 📍 ${p.location.name}` : '');
-      document.getElementById('flipPageNum').textContent = `Trang ${flipIndex + 1} / ${photos.length}`;
+      if (!photos.length) {
+        document.getElementById('flipTitleLeft').textContent = 'Sổ trống';
+        document.getElementById('flipTitleRight').textContent = 'Sổ trống';
+        return;
+      }
+
+      const pLeft = photos[flipPairIndex];
+      const pRight = photos[flipPairIndex + 1];
+
+      if (pLeft) {
+        document.getElementById('flipImgLeft').src = pLeft.dataUrl;
+        document.getElementById('flipTitleLeft').textContent = pLeft.caption || pLeft.name;
+        document.getElementById('flipDateLeft').textContent = new Date(pLeft.date).toLocaleDateString('vi-VN');
+        document.getElementById('pageNumLeft').textContent = `Trang ${flipPairIndex + 1}`;
+      } else {
+        document.getElementById('flipImgLeft').src = '';
+        document.getElementById('flipTitleLeft').textContent = '';
+        document.getElementById('flipDateLeft').textContent = '';
+      }
+
+      if (pRight) {
+        document.getElementById('flipImgRight').src = pRight.dataUrl;
+        document.getElementById('flipTitleRight').textContent = pRight.caption || pRight.name;
+        document.getElementById('flipDateRight').textContent = new Date(pRight.date).toLocaleDateString('vi-VN');
+        document.getElementById('pageNumRight').textContent = `Trang ${flipPairIndex + 2}`;
+      } else {
+        document.getElementById('flipImgRight').src = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2250%22>💖</text></svg>';
+        document.getElementById('flipTitleRight').textContent = 'Trang cuối sổ tay';
+        document.getElementById('flipDateRight').textContent = '';
+        document.getElementById('pageNumRight').textContent = '';
+      }
+
+      document.getElementById('flipPageNum').textContent = `Lật trang ${flipPairIndex + 1} - ${flipPairIndex + 2} / ${photos.length}`;
+    }
+
+    function animateLeafFlip(direction) {
+      playPageFlipSound();
+      const leaf = document.getElementById('flipLeaf');
+      leaf.style.display = 'block';
+      if (direction === 'next') {
+        leaf.style.transform = 'rotateY(0deg)';
+        requestAnimationFrame(() => {
+          leaf.style.transform = 'rotateY(-180deg)';
+        });
+      } else {
+        leaf.style.transform = 'rotateY(-180deg)';
+        requestAnimationFrame(() => {
+          leaf.style.transform = 'rotateY(0deg)';
+        });
+      }
+      setTimeout(() => {
+        leaf.style.display = 'none';
+        showFlipPage();
+      }, 600);
     }
 
     document.getElementById('btnFlipPrev').addEventListener('click', () => {
-      if (flipIndex > 0) { flipIndex--; showFlipPage(); }
+      if (flipPairIndex >= 2) {
+        flipPairIndex -= 2;
+        animateLeafFlip('prev');
+      } else {
+        toast('Đang ở trang bìa đầu tiên! 📖');
+      }
     });
+
     document.getElementById('btnFlipNext').addEventListener('click', () => {
-      if (flipIndex < photos.length - 1) { flipIndex++; showFlipPage(); }
+      if (flipPairIndex + 2 < photos.length) {
+        flipPairIndex += 2;
+        animateLeafFlip('next');
+      } else {
+        toast('Đã đến trang cuối của sổ tay! 📖');
+      }
     });
 
     document.getElementById('btnExportPDF').addEventListener('click', () => {
