@@ -392,7 +392,6 @@
     .lb-actions button:hover, .lb-actions a:hover { background: var(--accent-hover); transform: translateY(-2px); }
     .lb-actions .lb-delete { background: var(--danger); box-shadow: 0 4px 10px rgba(239,83,80,0.3); }
     .lb-actions .lb-delete:hover { background: #d32f2f; }
-
     .lb-close, .lb-prev, .lb-next {
       position: absolute; background: white; border: none; color: var(--accent);
       width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
@@ -415,6 +414,220 @@
       box-shadow: 0 10px 20px rgba(0,0,0,0.15);
     }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ============ NEW Badge ============ */
+    .badge-new {
+      position: absolute;
+      top: 10px; right: 10px;
+      background: linear-gradient(135deg, #ff4081, #ff80ab);
+      color: white;
+      font-weight: 700;
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 12px;
+      box-shadow: 0 3px 10px rgba(255, 64, 129, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      letter-spacing: 0.5px;
+      z-index: 15;
+      animation: pulseBadge 2s infinite;
+      pointer-events: none;
+    }
+    @keyframes pulseBadge {
+      0% { transform: scale(1); box-shadow: 0 3px 10px rgba(255, 64, 129, 0.4); }
+      50% { transform: scale(1.08); box-shadow: 0 5px 15px rgba(255, 64, 129, 0.7); }
+      100% { transform: scale(1); box-shadow: 0 3px 10px rgba(255, 64, 129, 0.4); }
+    }
+
+    /* ============ Mode Switcher ============ */
+    .view-mode-toggle {
+      display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap;
+    }
+    .mode-btn {
+      font-size: 14px; font-weight: 600;
+      padding: 8px 18px; border-radius: 20px;
+      border: 1.5px solid var(--accent);
+      background: rgba(255, 255, 255, 0.75);
+      color: var(--text-main); cursor: pointer;
+      transition: all 0.25s var(--ease);
+      display: inline-flex; align-items: center; gap: 6px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .mode-btn:hover {
+      background: rgba(255, 128, 171, 0.15);
+      transform: translateY(-2px);
+    }
+    .mode-btn.active {
+      background: var(--accent);
+      color: white; border-color: var(--accent);
+      box-shadow: 0 4px 14px rgba(255, 128, 171, 0.45);
+    }
+
+    /* ============ Learning Section ============ */
+    .learning-header {
+      text-align: center; margin-bottom: 24px;
+    }
+    .learning-title {
+      font-family: 'Dancing Script', cursive;
+      font-size: 42px; font-weight: 700; color: var(--text-main); margin: 0 0 6px;
+    }
+    .learning-desc {
+      font-size: 14px; color: var(--text-light); margin: 0;
+    }
+
+    .learning-toolbar {
+      display: flex; flex-wrap: wrap; gap: 16px;
+      align-items: center; justify-content: space-between;
+      background: rgba(255, 255, 255, 0.65);
+      backdrop-filter: blur(10px);
+      padding: 16px 24px; border-radius: 20px;
+      border: 1px solid var(--glass-border);
+      margin-bottom: 30px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+    }
+
+    .learning-subtabs {
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .subtab-btn {
+      padding: 8px 16px; font-size: 13px; font-weight: 600;
+      border-radius: 16px; border: 1px solid rgba(255,128,171,0.3);
+      background: rgba(255, 255, 255, 0.8); color: var(--text-light);
+      cursor: pointer; transition: all 0.2s;
+    }
+    .subtab-btn:hover { background: white; color: var(--accent); }
+    .subtab-btn.active {
+      background: var(--accent); color: white; border-color: var(--accent);
+      box-shadow: 0 3px 10px rgba(255,128,171,0.3);
+    }
+
+    .learning-filters {
+      display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+    }
+    .select-style {
+      padding: 8px 14px; font-size: 13px; border-radius: 14px;
+      border: 1px solid rgba(0,0,0,0.1); background: white;
+      color: var(--text-main); font-family: inherit; font-weight: 500;
+      outline: none; cursor: pointer; transition: 0.2s;
+    }
+    .select-style:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255,128,171,0.25); }
+
+    /* Flashcard 3D */
+    .flashcard-wrap {
+      display: flex; flex-direction: column; align-items: center; gap: 20px;
+    }
+    .flashcard-stage {
+      perspective: 1200px;
+      width: 100%; max-width: 440px; height: 500px;
+      cursor: pointer; position: relative;
+    }
+    .flashcard-card {
+      width: 100%; height: 100%; position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 20px;
+    }
+    .flashcard-stage.flipped .flashcard-card {
+      transform: rotateY(180deg);
+    }
+    .fc-face {
+      position: absolute; inset: 0;
+      -webkit-backface-visibility: hidden; backface-visibility: hidden;
+      border-radius: 20px; background: white;
+      box-shadow: 0 15px 35px rgba(255, 182, 193, 0.4);
+      border: 1px solid rgba(255,255,255,0.8);
+      overflow: hidden; padding: 16px;
+      display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+    }
+    .fc-front { background: #ffffff; }
+    .fc-back {
+      background: linear-gradient(135deg, #fff0f5, #ffe4e1, #fff);
+      transform: rotateY(180deg);
+      justify-content: center; text-align: center; gap: 16px; padding: 30px 24px;
+    }
+    .fc-media-box {
+      width: 100%; height: 85%; border-radius: 14px; overflow: hidden; position: relative; background: #000;
+    }
+    .fc-media-box img, .fc-media-box video {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+    }
+    .fc-hint {
+      font-size: 13px; color: var(--text-light); font-weight: 500;
+      display: flex; align-items: center; gap: 6px; padding-top: 4px;
+    }
+
+    .fc-controls {
+      display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap;
+    }
+    .fc-counter {
+      font-size: 14px; font-weight: 600; color: var(--text-light);
+      background: rgba(255,255,255,0.7); padding: 6px 14px; border-radius: 20px;
+    }
+
+    /* Quiz styling */
+    .quiz-card-wrap {
+      max-width: 580px; margin: 0 auto; background: white;
+      padding: 24px; border-radius: 24px;
+      box-shadow: 0 15px 40px rgba(255, 182, 193, 0.35);
+      text-align: center; position: relative;
+    }
+    .quiz-media {
+      width: 100%; max-height: 320px; border-radius: 16px; object-fit: cover; margin-bottom: 20px;
+    }
+    .quiz-question {
+      font-size: 18px; font-weight: 600; color: var(--text-main); margin-bottom: 20px;
+    }
+    .quiz-options {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;
+    }
+    @media (max-width: 480px) { .quiz-options { grid-template-columns: 1fr; } }
+    .quiz-opt-btn {
+      padding: 12px 16px; font-size: 14px; font-weight: 500;
+      border-radius: 14px; border: 1.5px solid rgba(255,128,171,0.3);
+      background: rgba(255, 240, 245, 0.5); color: var(--text-main);
+      cursor: pointer; transition: all 0.2s; text-align: center;
+    }
+    .quiz-opt-btn:hover:not(:disabled) {
+      background: rgba(255,128,171,0.2); transform: translateY(-2px); border-color: var(--accent);
+    }
+    .quiz-opt-btn.correct {
+      background: #4caf50 !important; color: white !important; border-color: #4caf50 !important;
+    }
+    .quiz-opt-btn.wrong {
+      background: #f44336 !important; color: white !important; border-color: #f44336 !important;
+    }
+    .quiz-score-badge {
+      position: absolute; top: 20px; right: 20px;
+      background: linear-gradient(135deg, #ff9800, #ffb74d);
+      color: white; font-weight: 700; font-size: 13px;
+      padding: 4px 12px; border-radius: 20px; box-shadow: 0 3px 8px rgba(255,152,0,0.3);
+    }
+
+    /* Slideshow Learning styling */
+    .ss-player-wrap {
+      max-width: 720px; margin: 0 auto; background: white;
+      padding: 20px; border-radius: 24px;
+      box-shadow: 0 15px 40px rgba(255, 182, 193, 0.35);
+      position: relative; overflow: hidden;
+    }
+    .ss-media-box {
+      width: 100%; height: 420px; border-radius: 16px; overflow: hidden; background: #000; position: relative;
+    }
+    .ss-media-box img, .ss-media-box video {
+      width: 100%; height: 100%; object-fit: contain; display: block;
+    }
+    .ss-bar {
+      width: 100%; height: 4px; background: rgba(0,0,0,0.1); border-radius: 2px; margin: 16px 0; overflow: hidden;
+    }
+    .ss-bar-fill {
+      height: 100%; background: var(--accent); width: 0%; transition: width 0.1s linear;
+    }
+    .ss-info {
+      text-align: center; margin-bottom: 16px;
+    }
+    .ss-title {
+      font-family: 'Dancing Script', cursive; font-size: 28px; font-weight: 700; color: var(--text-main); margin: 0 0 4px;
+    }
+    .ss-sub { font-size: 12px; color: var(--text-light); }
 
     /* Responsive tweaks */
     @media (max-width: 768px) {
@@ -449,6 +662,10 @@
     <header class="cover-header">
       <span class="cover-eyebrow">Hành trình của chúng mình 💖</span>
       <h1 class="cover-title">Nhật Ký Tình Yêu <span class="cover-count" id="totalCount">0 ảnh · 0 album</span></h1>
+      <div class="view-mode-toggle">
+        <button class="mode-btn active" id="btnModeGallery" type="button">📖 Sổ Tay Kỷ Niệm</button>
+        <button class="mode-btn" id="btnModeLearning" type="button">🎓 Bộ Học Video & Ảnh</button>
+      </div>
     </header>
 
     <nav class="tabs-bar" id="tabsBar"></nav>
@@ -463,6 +680,8 @@
     <main class="page" id="pageArea">
       <div class="loading-state" id="loadingState">Đang mở sổ tay…</div>
     </main>
+
+    <main class="page" id="learningArea" style="display: none;"></main>
   </div>
 
   <input type="file" id="fileInput" accept="image/*,video/*" multiple hidden>
@@ -532,6 +751,10 @@
       const lbPrev = document.getElementById('lbPrev');
       const lbNext = document.getElementById('lbNext');
 
+      const btnModeGallery = document.getElementById('btnModeGallery');
+      const btnModeLearning = document.getElementById('btnModeLearning');
+      const learningArea = document.getElementById('learningArea');
+
       let albums = [];   // {id, name, color, date}
       let photos = [];   // {id, albumId, name, dataUrl, width, height, size, date, caption}
       let currentAlbumId = null;
@@ -540,6 +763,23 @@
       let lbIndex = -1;
       let isSelectMode = false;
       let selectedPhotos = new Set();
+
+      // State Chế độ Bộ Học Video & Ảnh
+      let currentViewMode = 'gallery'; // 'gallery' | 'learning'
+      let learningSubMode = 'flashcard'; // 'flashcard' | 'slideshow' | 'quiz'
+      let learningFilterAlbum = 'all';
+      let learningFilterType = 'all'; // 'all' | 'video' | 'image' | 'new'
+      let learningList = [];
+      let flashcardIdx = 0;
+      let isFlashcardFlipped = false;
+
+      let ssTimer = null;
+      let ssIdx = 0;
+      let isSsPlaying = true;
+
+      let quizCurrentItem = null;
+      let quizScore = 0;
+      let quizAnswered = false;
 
       // Drag-to-scroll variables for desktop
       let isDown = false;
@@ -558,6 +798,19 @@
       function uid() { return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 9); }
       function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
       function fmtBytes(b) { if (b < 1024) return b + ' B'; if (b < 1024 * 1024) return (b / 1024).toFixed(0) + ' KB'; return (b / (1024 * 1024)).toFixed(1) + ' MB'; }
+
+      // Hàm kiểm tra tệp mới thêm
+      function isNew(photo) {
+        if (!photo || !photo.date) return false;
+        const isWithin24h = (Date.now() - photo.date) < (24 * 60 * 60 * 1000);
+        if (isWithin24h) return true;
+        if (photos && photos.length > 0) {
+          const sorted = [...photos].sort((a, b) => b.date - a.date);
+          const topIds = sorted.slice(0, Math.min(3, sorted.length)).map(p => p.id);
+          return topIds.includes(photo.id);
+        }
+        return false;
+      }
 
       const TILT = [-2.5, 1.5, -1, 3, -3, 2, -1.5, 2.5];
 
@@ -741,39 +994,40 @@
           sliderPhotos.forEach((p, i) => {
             const slide = document.createElement('div');
             slide.className = 'slider-slide';
+            const badgeHtml = isNew(p) ? '<div class="badge-new" style="top:14px; right:14px;">✨ NEW</div>' : '';
             if (p.resourceType === 'video') {
-              slide.innerHTML = `<video class="slider-img" src="${p.dataUrl}" muted loop playsinline autoplay style="object-fit: cover; width: 100%; height: 100%;"></video><div class="slider-caption">${escapeHtml(p.caption || p.name)}</div>`;
+              slide.innerHTML = `${badgeHtml}<video class="slider-img" src="${p.dataUrl}" muted loop playsinline autoplay style="object-fit: cover; width: 100%; height: 100%;"></video><div class="slider-caption">${escapeHtml(p.caption || p.name)}</div>`;
             } else {
-              slide.innerHTML = `<img class="slider-img" src="${p.dataUrl}" alt="slide"><div class="slider-caption">${escapeHtml(p.caption || p.name)}</div>`;
+              slide.innerHTML = `${badgeHtml}<img class="slider-img" src="${p.dataUrl}" alt="slide"><div class="slider-caption">${escapeHtml(p.caption || p.name)}</div>`;
             }
             track.appendChild(slide);
-            
+
             const dot = document.createElement('div');
             dot.className = 'slider-dot' + (i === 0 ? ' active' : '');
             dot.addEventListener('click', () => goToSlide(i));
             dotsWrap.appendChild(dot);
           });
-          
+
           sliderWrap.appendChild(track);
           sliderWrap.appendChild(dotsWrap);
-          
+
           if (sliderPhotos.length > 1) {
             const btnPrev = document.createElement('button');
             btnPrev.className = 'slider-btn prev'; btnPrev.textContent = '‹';
             btnPrev.addEventListener('click', () => goToSlide(currentIndex - 1));
-            
+
             const btnNext = document.createElement('button');
             btnNext.className = 'slider-btn next'; btnNext.textContent = '›';
             btnNext.addEventListener('click', () => goToSlide(currentIndex + 1));
-            
+
             sliderWrap.appendChild(btnPrev);
             sliderWrap.appendChild(btnNext);
-            
+
             let autoSlide = setInterval(() => goToSlide(currentIndex + 1), 4000);
             sliderWrap.addEventListener('mouseenter', () => clearInterval(autoSlide));
             sliderWrap.addEventListener('mouseleave', () => autoSlide = setInterval(() => goToSlide(currentIndex + 1), 4000));
           }
-          
+
           function goToSlide(idx) {
             if (idx < 0) idx = sliderPhotos.length - 1;
             if (idx >= sliderPhotos.length) idx = 0;
@@ -781,7 +1035,7 @@
             track.style.transform = `translateX(-${idx * 100}%)`;
             Array.from(dotsWrap.children).forEach((d, i) => d.classList.toggle('active', i === idx));
           }
-          
+
           pageArea.appendChild(sliderWrap);
         }
 
@@ -798,6 +1052,13 @@
           tape.className = 'tape';
           tape.textContent = '📌';
           card.appendChild(tape);
+
+          if (isNew(p)) {
+            const badge = document.createElement('div');
+            badge.className = 'badge-new';
+            badge.textContent = '✨ NEW';
+            card.appendChild(badge);
+          }
 
           let mediaEl;
           if (p.resourceType === 'video') {
@@ -887,7 +1148,430 @@
         pageArea.appendChild(grid);
       }
 
-      function renderAll() { renderTabs(); renderPage(); }
+      function setViewMode(mode) {
+        currentViewMode = mode;
+        if (mode === 'gallery') {
+          btnModeGallery.classList.add('active');
+          btnModeLearning.classList.remove('active');
+          tabsBar.style.display = 'flex';
+          pageArea.style.display = 'block';
+          learningArea.style.display = 'none';
+          if (ssTimer) clearInterval(ssTimer);
+          renderAll();
+        } else {
+          btnModeLearning.classList.add('active');
+          btnModeGallery.classList.remove('active');
+          tabsBar.style.display = 'none';
+          newAlbumPanel.classList.remove('show');
+          pageArea.style.display = 'none';
+          learningArea.style.display = 'block';
+          flashcardIdx = 0;
+          isFlashcardFlipped = false;
+          quizAnswered = false;
+          renderLearning();
+        }
+      }
+
+      btnModeGallery.addEventListener('click', () => setViewMode('gallery'));
+      btnModeLearning.addEventListener('click', () => setViewMode('learning'));
+
+      function getLearningList() {
+        let list = [...photos];
+        if (learningFilterAlbum !== 'all') {
+          list = list.filter(p => p.albumId === learningFilterAlbum);
+        }
+        if (learningFilterType === 'video') {
+          list = list.filter(p => p.resourceType === 'video');
+        } else if (learningFilterType === 'image') {
+          list = list.filter(p => !p.resourceType || p.resourceType === 'image');
+        } else if (learningFilterType === 'new') {
+          list = list.filter(p => isNew(p));
+        }
+        return list.sort((a, b) => b.date - a.date);
+      }
+
+      function renderLearning() {
+        if (ssTimer) clearInterval(ssTimer);
+        learningList = getLearningList();
+        learningArea.innerHTML = '';
+
+        const header = document.createElement('div');
+        header.className = 'learning-header';
+        header.innerHTML = `
+          <h2 class="learning-title">🎓 Bộ Học Video & Ảnh Kỷ Niệm</h2>
+          <p class="learning-desc">Ôn lại khoảnh khắc yêu thương bằng thẻ lật 3D, trình chiếu & trò chơi thử thách trí nhớ</p>
+        `;
+        learningArea.appendChild(header);
+
+        const toolbar = document.createElement('div');
+        toolbar.className = 'learning-toolbar';
+
+        const subtabs = document.createElement('div');
+        subtabs.className = 'learning-subtabs';
+
+        const subModeOptions = [
+          { id: 'flashcard', name: '🎴 Thẻ Ghi Nhớ' },
+          { id: 'slideshow', name: '▶️ Trình Chiếu Học' },
+          { id: 'quiz', name: '❓ Trắc Nghiệm Kỷ Niệm' }
+        ];
+
+        subModeOptions.forEach(opt => {
+          const btn = document.createElement('button');
+          btn.className = 'subtab-btn' + (learningSubMode === opt.id ? ' active' : '');
+          btn.textContent = opt.name;
+          btn.addEventListener('click', () => {
+            learningSubMode = opt.id;
+            flashcardIdx = 0;
+            isFlashcardFlipped = false;
+            quizAnswered = false;
+            renderLearning();
+          });
+          subtabs.appendChild(btn);
+        });
+
+        const filtersDiv = document.createElement('div');
+        filtersDiv.className = 'learning-filters';
+
+        const albumSelect = document.createElement('select');
+        albumSelect.className = 'select-style';
+        let albumOptsHTML = '<option value="all">📁 Tất cả album</option>';
+        albums.forEach(a => {
+          albumOptsHTML += `<option value="${a.id}" ${learningFilterAlbum === a.id ? 'selected' : ''}>📁 ${escapeHtml(a.name)}</option>`;
+        });
+        albumSelect.innerHTML = albumOptsHTML;
+        albumSelect.addEventListener('change', (e) => {
+          learningFilterAlbum = e.target.value;
+          flashcardIdx = 0;
+          quizAnswered = false;
+          renderLearning();
+        });
+
+        const typeSelect = document.createElement('select');
+        typeSelect.className = 'select-style';
+        typeSelect.innerHTML = `
+          <option value="all" ${learningFilterType === 'all' ? 'selected' : ''}>🎬 Tất cả tệp (${photos.length})</option>
+          <option value="video" ${learningFilterType === 'video' ? 'selected' : ''}>🎥 Video</option>
+          <option value="image" ${learningFilterType === 'image' ? 'selected' : ''}>🖼️ Ảnh</option>
+          <option value="new" ${learningFilterType === 'new' ? 'selected' : ''}>✨ Tệp Mới (NEW)</option>
+        `;
+        typeSelect.addEventListener('change', (e) => {
+          learningFilterType = e.target.value;
+          flashcardIdx = 0;
+          quizAnswered = false;
+          renderLearning();
+        });
+
+        filtersDiv.appendChild(albumSelect);
+        filtersDiv.appendChild(typeSelect);
+
+        toolbar.appendChild(subtabs);
+        toolbar.appendChild(filtersDiv);
+        learningArea.appendChild(toolbar);
+
+        if (!learningList.length) {
+          const empty = document.createElement('div');
+          empty.className = 'empty-state';
+          empty.innerHTML = `
+            <h2>Chưa tìm thấy tệp kỷ niệm nào</h2>
+            <p>Không có video/ảnh phù hợp với bộ lọc bạn chọn. Thêm tệp mới hoặc chọn bộ lọc khác nhé!</p>
+          `;
+          learningArea.appendChild(empty);
+          return;
+        }
+
+        if (learningSubMode === 'flashcard') {
+          renderFlashcardMode();
+        } else if (learningSubMode === 'slideshow') {
+          renderSlideshowMode();
+        } else if (learningSubMode === 'quiz') {
+          renderQuizMode();
+        }
+      }
+
+      function renderFlashcardMode() {
+        if (flashcardIdx >= learningList.length) flashcardIdx = 0;
+        if (flashcardIdx < 0) flashcardIdx = learningList.length - 1;
+        const p = learningList[flashcardIdx];
+        const album = albums.find(a => a.id === p.albumId) || { name: 'Album kỷ niệm', color: '#ff80ab' };
+
+        const wrap = document.createElement('div');
+        wrap.className = 'flashcard-wrap';
+
+        const stage = document.createElement('div');
+        stage.className = 'flashcard-stage' + (isFlashcardFlipped ? ' flipped' : '');
+        stage.addEventListener('click', () => {
+          isFlashcardFlipped = !isFlashcardFlipped;
+          stage.classList.toggle('flipped', isFlashcardFlipped);
+        });
+
+        const card = document.createElement('div');
+        card.className = 'flashcard-card';
+
+        const front = document.createElement('div');
+        front.className = 'fc-face fc-front';
+        const mediaBox = document.createElement('div');
+        mediaBox.className = 'fc-media-box';
+
+        if (isNew(p)) {
+          const badge = document.createElement('div');
+          badge.className = 'badge-new';
+          badge.textContent = '✨ NEW';
+          mediaBox.appendChild(badge);
+        }
+
+        if (p.resourceType === 'video') {
+          const video = document.createElement('video');
+          video.src = p.dataUrl; video.autoplay = true; video.loop = true; video.muted = true; video.playsInline = true;
+          mediaBox.appendChild(video);
+        } else {
+          const img = document.createElement('img');
+          img.src = p.dataUrl; img.alt = p.name;
+          mediaBox.appendChild(img);
+        }
+
+        const hint = document.createElement('div');
+        hint.className = 'fc-hint';
+        hint.innerHTML = `<span>🔄 Click vào thẻ để lật xem chú thích</span>`;
+
+        front.appendChild(mediaBox);
+        front.appendChild(hint);
+
+        const back = document.createElement('div');
+        back.className = 'fc-face fc-back';
+        const dateStr = new Date(p.date).toLocaleDateString('vi-VN');
+        const cap = p.caption && p.caption.trim() ? p.caption : (p.name || 'Khoảnh khắc ngọt ngào');
+
+        back.innerHTML = `
+          <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); font-weight: 600;">
+            <span class="dot" style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${album.color}; margin-right:6px;"></span>
+            ${escapeHtml(album.name)}
+          </div>
+          <div style="font-family:'Dancing Script', cursive; font-size:36px; font-weight:700; color:var(--text-main); line-height:1.2;">
+            "${escapeHtml(cap)}"
+          </div>
+          <div style="font-size:13px; color:var(--text-light);">
+            📅 ${dateStr} · 💾 ${fmtBytes(p.size)} · ${p.resourceType === 'video' ? '🎥 Video' : '🖼️ Ảnh'}
+          </div>
+          <div style="font-size: 13px; background: rgba(255,128,171,0.15); padding: 8px 16px; border-radius: 20px; color: var(--accent); font-weight: 500;">
+            💖 Bạn có nhớ khoảnh khắc đáng yêu này không?
+          </div>
+        `;
+
+        card.appendChild(front);
+        card.appendChild(back);
+        stage.appendChild(card);
+        wrap.appendChild(stage);
+
+        const ctrls = document.createElement('div');
+        ctrls.className = 'fc-controls';
+
+        const btnPrev = document.createElement('button');
+        btnPrev.className = 'btn ghost'; btnPrev.textContent = '‹ Thẻ trước';
+        btnPrev.addEventListener('click', () => { isFlashcardFlipped = false; flashcardIdx--; renderLearning(); });
+
+        const btnFlip = document.createElement('button');
+        btnFlip.className = 'btn'; btnFlip.textContent = '🔄 Lật thẻ';
+        btnFlip.addEventListener('click', () => { isFlashcardFlipped = !isFlashcardFlipped; stage.classList.toggle('flipped', isFlashcardFlipped); });
+
+        const btnShuffle = document.createElement('button');
+        btnShuffle.className = 'btn ghost'; btnShuffle.textContent = '🔀 Trộn';
+        btnShuffle.addEventListener('click', () => {
+          flashcardIdx = Math.floor(Math.random() * learningList.length);
+          isFlashcardFlipped = false;
+          renderLearning();
+        });
+
+        const btnNext = document.createElement('button');
+        btnNext.className = 'btn ghost'; btnNext.textContent = 'Thẻ sau ›';
+        btnNext.addEventListener('click', () => { isFlashcardFlipped = false; flashcardIdx++; renderLearning(); });
+
+        const counter = document.createElement('span');
+        counter.className = 'fc-counter';
+        counter.textContent = `Thẻ ${flashcardIdx + 1} / ${learningList.length}`;
+
+        ctrls.appendChild(btnPrev);
+        ctrls.appendChild(btnFlip);
+        ctrls.appendChild(btnShuffle);
+        ctrls.appendChild(btnNext);
+        ctrls.appendChild(counter);
+
+        wrap.appendChild(ctrls);
+        learningArea.appendChild(wrap);
+      }
+
+      function renderSlideshowMode() {
+        if (ssIdx >= learningList.length) ssIdx = 0;
+        if (ssIdx < 0) ssIdx = learningList.length - 1;
+        const p = learningList[ssIdx];
+        const album = albums.find(a => a.id === p.albumId) || { name: 'Album kỷ niệm' };
+
+        const playerWrap = document.createElement('div');
+        playerWrap.className = 'ss-player-wrap';
+
+        const mediaBox = document.createElement('div');
+        mediaBox.className = 'ss-media-box';
+
+        if (isNew(p)) {
+          const badge = document.createElement('div');
+          badge.className = 'badge-new';
+          badge.textContent = '✨ NEW';
+          mediaBox.appendChild(badge);
+        }
+
+        if (p.resourceType === 'video') {
+          const video = document.createElement('video');
+          video.src = p.dataUrl; video.autoplay = true; video.controls = true; video.style.width = '100%'; video.style.height = '100%';
+          mediaBox.appendChild(video);
+        } else {
+          const img = document.createElement('img');
+          img.src = p.dataUrl; img.alt = p.name;
+          mediaBox.appendChild(img);
+        }
+
+        const bar = document.createElement('div');
+        bar.className = 'ss-bar';
+        const barFill = document.createElement('div');
+        barFill.className = 'ss-bar-fill';
+        bar.appendChild(barFill);
+
+        const info = document.createElement('div');
+        info.className = 'ss-info';
+        info.innerHTML = `
+          <h3 class="ss-title">${escapeHtml(p.caption || p.name)}</h3>
+          <div class="ss-sub">📁 ${escapeHtml(album.name)} · 📅 ${new Date(p.date).toLocaleDateString('vi-VN')}</div>
+        `;
+
+        const ctrls = document.createElement('div');
+        ctrls.className = 'fc-controls';
+
+        const btnPrev = document.createElement('button');
+        btnPrev.className = 'btn ghost'; btnPrev.textContent = '‹ Trước';
+        btnPrev.addEventListener('click', () => { ssIdx--; renderLearning(); });
+
+        const btnPlay = document.createElement('button');
+        btnPlay.className = 'btn'; btnPlay.textContent = isSsPlaying ? '⏸ Tạm dừng' : '▶ Phát';
+        btnPlay.addEventListener('click', () => {
+          isSsPlaying = !isSsPlaying;
+          btnPlay.textContent = isSsPlaying ? '⏸ Tạm dừng' : '▶ Phát';
+        });
+
+        const btnNext = document.createElement('button');
+        btnNext.className = 'btn ghost'; btnNext.textContent = 'Tiếp ›';
+        btnNext.addEventListener('click', () => { ssIdx++; renderLearning(); });
+
+        ctrls.appendChild(btnPrev);
+        ctrls.appendChild(btnPlay);
+        ctrls.appendChild(btnNext);
+
+        playerWrap.appendChild(mediaBox);
+        playerWrap.appendChild(bar);
+        playerWrap.appendChild(info);
+        playerWrap.appendChild(ctrls);
+        learningArea.appendChild(playerWrap);
+
+        let progress = 0;
+        ssTimer = setInterval(() => {
+          if (!isSsPlaying) return;
+          progress += 2.5;
+          barFill.style.width = progress + '%';
+          if (progress >= 100) {
+            progress = 0;
+            ssIdx++;
+            renderLearning();
+          }
+        }, 100);
+      }
+
+      function renderQuizMode() {
+        if (!quizCurrentItem || !learningList.find(x => x.id === quizCurrentItem.id)) {
+          quizCurrentItem = learningList[Math.floor(Math.random() * learningList.length)];
+        }
+        const p = quizCurrentItem;
+        const correctAlbum = albums.find(a => a.id === p.albumId) || { id: 'unknown', name: 'Album kỷ niệm' };
+
+        const quizWrap = document.createElement('div');
+        quizWrap.className = 'quiz-card-wrap';
+
+        const scoreBadge = document.createElement('div');
+        scoreBadge.className = 'quiz-score-badge';
+        scoreBadge.textContent = `🏆 Điểm: ${quizScore}`;
+        quizWrap.appendChild(scoreBadge);
+
+        if (p.resourceType === 'video') {
+          const video = document.createElement('video');
+          video.className = 'quiz-media'; video.src = p.dataUrl; video.autoplay = true; video.loop = true; video.muted = true; video.playsInline = true;
+          quizWrap.appendChild(video);
+        } else {
+          const img = document.createElement('img');
+          img.className = 'quiz-media'; img.src = p.dataUrl; img.alt = 'Quiz';
+          quizWrap.appendChild(img);
+        }
+
+        const qText = document.createElement('div');
+        qText.className = 'quiz-question';
+        qText.textContent = `Khoảnh khắc này nằm trong Album nào? 💖`;
+        quizWrap.appendChild(qText);
+
+        let options = [correctAlbum];
+        const otherAlbums = albums.filter(a => a.id !== correctAlbum.id);
+        const shuffledOthers = [...otherAlbums].sort(() => 0.5 - Math.random());
+        options = options.concat(shuffledOthers.slice(0, 3));
+        options.sort(() => 0.5 - Math.random());
+
+        const optGrid = document.createElement('div');
+        optGrid.className = 'quiz-options';
+
+        options.forEach(opt => {
+          const btn = document.createElement('button');
+          btn.className = 'quiz-opt-btn';
+          btn.textContent = '📁 ' + opt.name;
+          if (quizAnswered) btn.disabled = true;
+
+          btn.addEventListener('click', () => {
+            if (quizAnswered) return;
+            quizAnswered = true;
+            if (opt.id === correctAlbum.id) {
+              btn.classList.add('correct');
+              quizScore += 10;
+              toast('🎉 Chính xác! (+10 điểm)');
+            } else {
+              btn.classList.add('wrong');
+              toast('💡 Chưa đúng rồi! Thử câu tiếp theo nhé.');
+              Array.from(optGrid.children).forEach(b => {
+                if (b.textContent.includes(correctAlbum.name)) b.classList.add('correct');
+              });
+            }
+            scoreBadge.textContent = `🏆 Điểm: ${quizScore}`;
+            btnNextQuiz.style.display = 'inline-block';
+          });
+
+          optGrid.appendChild(btn);
+        });
+
+        quizWrap.appendChild(optGrid);
+
+        const btnNextQuiz = document.createElement('button');
+        btnNextQuiz.className = 'btn';
+        btnNextQuiz.textContent = 'Câu tiếp theo ➔';
+        btnNextQuiz.style.display = quizAnswered ? 'inline-block' : 'none';
+        btnNextQuiz.addEventListener('click', () => {
+          quizCurrentItem = learningList[Math.floor(Math.random() * learningList.length)];
+          quizAnswered = false;
+          renderLearning();
+        });
+
+        quizWrap.appendChild(btnNextQuiz);
+        learningArea.appendChild(quizWrap);
+      }
+
+      function renderAll() {
+        renderTabs();
+        if (currentViewMode === 'gallery') {
+          renderPage();
+        } else {
+          renderLearning();
+        }
+      }
 
       // ---------------- Storage (Firebase) ----------------
       const albumsRef = ref(db, 'albums');
@@ -1146,7 +1830,11 @@
           lbContent.appendChild(img);
         }
         lbCaption.textContent = p.caption && p.caption.trim() ? p.caption : p.name;
-        lbMeta.textContent = (p.width && p.height ? p.width + '×' + p.height + ' · ' : '') + fmtBytes(p.size) + ' · ' + new Date(p.date).toLocaleDateString('vi-VN');
+        if (isNew(p)) {
+          lbMeta.innerHTML = `<span class="badge-new" style="position:static; display:inline-block; margin-right:8px;">✨ NEW</span> ` + (p.width && p.height ? p.width + '×' + p.height + ' · ' : '') + fmtBytes(p.size) + ' · ' + new Date(p.date).toLocaleDateString('vi-VN');
+        } else {
+          lbMeta.textContent = (p.width && p.height ? p.width + '×' + p.height + ' · ' : '') + fmtBytes(p.size) + ' · ' + new Date(p.date).toLocaleDateString('vi-VN');
+        }
         lbDownload.href = 'javascript:void(0)';
       }
       function closeLb() { lightbox.classList.remove('open'); document.body.style.overflow = ''; lbIndex = -1; }
