@@ -93,23 +93,10 @@
       50% { transform: scale(1.15); }
       100% { transform: scale(1); }
     }
-
-    @keyframes fall {
-      to { transform: translateY(110vh) rotate(360deg); }
-    }
     
     @keyframes fadeOutStar {
       0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
       100% { opacity: 0; transform: translate(-50%, calc(-50% + 40px)) scale(0.2); }
-    }
-
-    .falling-heart {
-      position: fixed;
-      top: -50px;
-      user-select: none;
-      pointer-events: none;
-      animation: fall linear forwards;
-      z-index: 90;
     }
 
     .mouse-heart {
@@ -1100,6 +1087,7 @@
     let storyIndex = 0;
     let passcodeDigits = '';
     let isAudioPlaying = false;
+    let hasAttemptedAutoplay = false;
 
     // Drag-to-scroll variables for desktop
     let isDown = false;
@@ -1121,12 +1109,66 @@
 
     const TILT = [-2.5, 1.5, -1, 3, -3, 2, -1.5, 2.5];
 
-    // ---------------- YouTube Link Detector ----------------
+    // ---------------- YouTube & Background Music Player ----------------
     function getYouTubeVideoId(url) {
       if (!url) return null;
       const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
       const match = url.trim().match(regExp);
       return (match && match[2].length === 11) ? match[2] : null;
+    }
+
+    function autoStartMusic() {
+      if (isAudioPlaying) return;
+      startMusicPlayback(true);
+    }
+
+    function startMusicPlayback(isAuto = false) {
+      const musicUrl = settings.bgMusicUrl ? settings.bgMusicUrl.trim() : '';
+      const ytId = getYouTubeVideoId(musicUrl);
+      const ytPlayer = document.getElementById('ytPlayer');
+      const musicTitle = document.getElementById('musicTitle');
+
+      if (ytId) {
+        bgAudio.pause();
+        const targetSrc = `https://www.youtube.com/embed/${ytId}?enablejsapi=1&autoplay=1&loop=1&playlist=${ytId}`;
+        if (!ytPlayer.src || !ytPlayer.src.includes(ytId)) {
+          ytPlayer.src = targetSrc;
+        } else {
+          ytPlayer.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+        }
+        isAudioPlaying = true;
+        btnPlayMusic.textContent = '⏸️';
+        musicTitle.textContent = 'YouTube Music 🎶';
+        if (!isAuto) toast('Đang phát nhạc từ YouTube 🎶');
+      } else {
+        if (ytPlayer && ytPlayer.src) {
+          ytPlayer.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+          ytPlayer.src = '';
+        }
+        if (musicUrl && musicUrl !== bgAudio.src) {
+          bgAudio.src = musicUrl;
+        }
+        bgAudio.play().then(() => {
+          isAudioPlaying = true;
+          btnPlayMusic.textContent = '⏸️';
+          musicTitle.textContent = 'Nhạc Tình Yêu 🎶';
+          if (!isAuto) toast('Đang phát nhạc nền 🎶');
+        }).catch(err => {
+          // If browser policy blocks autoplay before user interaction, attach one-time listener to start on first tap/click!
+          if (!hasAttemptedAutoplay) {
+            hasAttemptedAutoplay = true;
+            const startOnInteraction = () => {
+              document.removeEventListener('click', startOnInteraction);
+              document.removeEventListener('touchstart', startOnInteraction);
+              document.removeEventListener('keydown', startOnInteraction);
+              if (!isAudioPlaying) startMusicPlayback(true);
+            };
+            document.addEventListener('click', startOnInteraction);
+            document.addEventListener('touchstart', startOnInteraction);
+            document.addEventListener('keydown', startOnInteraction);
+          }
+        });
+      }
     }
 
     function toggleMusicPlayback() {
@@ -1144,35 +1186,7 @@
         btnPlayMusic.textContent = '🎵';
         musicTitle.textContent = 'Nhạc Tình Yêu (Tạm dừng)';
       } else {
-        if (ytId) {
-          bgAudio.pause();
-          const targetSrc = `https://www.youtube.com/embed/${ytId}?enablejsapi=1&autoplay=1&loop=1&playlist=${ytId}`;
-          if (!ytPlayer.src || !ytPlayer.src.includes(ytId)) {
-            ytPlayer.src = targetSrc;
-          } else {
-            ytPlayer.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-          }
-          isAudioPlaying = true;
-          btnPlayMusic.textContent = '⏸️';
-          musicTitle.textContent = 'YouTube Music 🎶';
-          toast('Đang phát nhạc từ YouTube 🎶');
-        } else {
-          if (ytPlayer && ytPlayer.src) {
-            ytPlayer.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
-            ytPlayer.src = '';
-          }
-          if (musicUrl && musicUrl !== bgAudio.src) {
-            bgAudio.src = musicUrl;
-          }
-          bgAudio.play().then(() => {
-            isAudioPlaying = true;
-            btnPlayMusic.textContent = '⏸️';
-            musicTitle.textContent = 'Nhạc Tình Yêu 🎶';
-            toast('Đang phát nhạc nền 🎶');
-          }).catch(err => {
-            toast('Không thể phát nhạc. Hãy kiểm tra lại đường dẫn MP3/YouTube.');
-          });
-        }
+        startMusicPlayback(false);
       }
     }
 
@@ -1747,6 +1761,7 @@
           updateLoveCounter();
           applyTheme(settings.selectedTheme || 'default');
           checkPasscodeLock();
+          autoStartMusic();
         }
       });
       
@@ -2138,6 +2153,7 @@
 
       settingsModal.classList.remove('open');
       toast('Đã lưu ngày kỷ niệm & cài đặt nhạc! 💖');
+      startMusicPlayback(false);
     });
 
     document.getElementById('btnPrintBook').addEventListener('click', () => window.print());
@@ -2169,21 +2185,8 @@
     renderSwatches();
     loadData();
 
-    // ---------------- Mưa tim & Hiệu ứng chuột ----------------
+    // ---------------- Hiệu ứng con trỏ chuột ----------------
     const effectHearts = ['❤️', '💖', '💕', '🌸', '✨'];
-    
-    function createFallingHeart() {
-      const heart = document.createElement('div');
-      heart.className = 'falling-heart';
-      heart.textContent = effectHearts[Math.floor(Math.random() * effectHearts.length)];
-      heart.style.left = Math.random() * 100 + 'vw';
-      const duration = Math.random() * 4 + 4;
-      heart.style.animationDuration = duration + 's';
-      heart.style.fontSize = (Math.random() * 15 + 10) + 'px';
-      document.body.appendChild(heart);
-      setTimeout(() => heart.remove(), duration * 1000);
-    }
-    setInterval(createFallingHeart, 400);
 
     let lastMouseMoveTime = 0;
     document.addEventListener('mousemove', (e) => {
