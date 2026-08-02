@@ -1089,6 +1089,7 @@
       
       <div class="lb-actions">
         <button id="lbFavToggle">❤️ Yêu thích</button>
+        <button id="btnLbFullscreen">🖥️ Full Màn Hình</button>
         <button id="btnLbSticker">🌸 Dán Sticker</button>
         <button id="btnLbRemoveStickers" style="display:none; background:#78909c;">🧹 Xoá Sticker</button>
         <button id="btnLbVoice">🎙️ Voice Note</button>
@@ -2499,8 +2500,43 @@
       renderPage();
     });
 
-    function closeLb() { lightbox.classList.remove('open'); document.body.style.overflow = ''; lbIndex = -1; }
-    function stepLb(dir) { if (!lbList.length) return; lbIndex = (lbIndex + dir + lbList.length) % lbList.length; showLb(); }
+    function closeLb() {
+      const videos = lbContent.querySelectorAll('video');
+      videos.forEach(v => { v.pause(); v.src = ''; v.load(); });
+      const lbVoicePlayer = document.getElementById('lbVoicePlayer');
+      if (lbVoicePlayer) { lbVoicePlayer.pause(); lbVoicePlayer.currentTime = 0; }
+
+      lightbox.classList.remove('open');
+      document.body.style.overflow = '';
+      lbIndex = -1;
+
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+
+    function stepLb(dir) {
+      if (!lbList.length) return;
+      const videos = lbContent.querySelectorAll('video');
+      videos.forEach(v => { v.pause(); v.src = ''; });
+      lbIndex = (lbIndex + dir + lbList.length) % lbList.length;
+      showLb();
+    }
+
+    function toggleFullscreenMedia() {
+      const mediaWrap = lbContent.querySelector('img') || lbContent.querySelector('video') || lbContent;
+      if (!document.fullscreenElement) {
+        if (mediaWrap.requestFullscreen) mediaWrap.requestFullscreen();
+        else if (mediaWrap.webkitRequestFullscreen) mediaWrap.webkitRequestFullscreen();
+        toast('Đã mở chế độ Full màn hình! 🖥️ Bấm Esc để thoát.');
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    }
+
+    const btnLbFullscreen = document.getElementById('btnLbFullscreen');
+    if (btnLbFullscreen) btnLbFullscreen.addEventListener('click', toggleFullscreenMedia);
+    lbContent.addEventListener('dblclick', toggleFullscreenMedia);
 
     lbClose.addEventListener('click', closeLb);
     lbPrev.addEventListener('click', () => stepLb(-1));
@@ -2580,6 +2616,9 @@
     }
 
     document.getElementById('btnCloseStory').addEventListener('click', () => {
+      const wrap = document.getElementById('storyWrap');
+      const videos = wrap.querySelectorAll('video');
+      videos.forEach(v => { v.pause(); v.src = ''; });
       storyOverlay.classList.remove('open');
       clearInterval(storyTimer);
     });
