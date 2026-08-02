@@ -93,10 +93,23 @@
       50% { transform: scale(1.15); }
       100% { transform: scale(1); }
     }
+
+    @keyframes fall {
+      to { transform: translateY(110vh) rotate(360deg); }
+    }
     
     @keyframes fadeOutStar {
       0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
       100% { opacity: 0; transform: translate(-50%, calc(-50% + 40px)) scale(0.2); }
+    }
+
+    .falling-heart {
+      position: fixed;
+      top: -50px;
+      user-select: none;
+      pointer-events: none;
+      animation: fall linear forwards;
+      z-index: 90;
     }
 
     .mouse-heart {
@@ -2185,8 +2198,21 @@
     renderSwatches();
     loadData();
 
-    // ---------------- Hiệu ứng con trỏ chuột ----------------
+    // ---------------- Mưa tim & Hiệu ứng chuột ----------------
     const effectHearts = ['❤️', '💖', '💕', '🌸', '✨'];
+    
+    function createFallingHeart() {
+      const heart = document.createElement('div');
+      heart.className = 'falling-heart';
+      heart.textContent = effectHearts[Math.floor(Math.random() * effectHearts.length)];
+      heart.style.left = Math.random() * 100 + 'vw';
+      const duration = Math.random() * 4 + 4;
+      heart.style.animationDuration = duration + 's';
+      heart.style.fontSize = (Math.random() * 15 + 10) + 'px';
+      document.body.appendChild(heart);
+      setTimeout(() => heart.remove(), duration * 1000);
+    }
+    setInterval(createFallingHeart, 400);
 
     let lastMouseMoveTime = 0;
     document.addEventListener('mousemove', (e) => {
