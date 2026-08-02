@@ -633,6 +633,22 @@
       z-index: 7; transition: transform 0.2s;
     }
     .fav-btn-card:hover { transform: scale(1.2); }
+
+    .fs-btn-card {
+      position: absolute;
+      top: 10px;
+      right: 44px;
+      background: rgba(255,255,255,0.85);
+      border: none;
+      border-radius: 50%;
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      z-index: 7; transition: transform 0.2s;
+      color: var(--text-main);
+    }
+    .fs-btn-card:hover { transform: scale(1.2); background: white; }
     
     .caption-wrap { padding: 12px 4px 16px; text-align: center; }
     .caption {
@@ -970,6 +986,54 @@
     .story-media-wrap { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
     .story-img { max-width: 100%; max-height: 90vh; object-fit: contain; }
 
+    /* Fullscreen Immersive Photo Viewer CSS */
+    .fullscreen-viewer {
+      position: fixed; inset: 0; z-index: 500;
+      background: #000;
+      display: none; flex-direction: column; align-items: center; justify-content: center;
+      user-select: none;
+    }
+    .fullscreen-viewer.open { display: flex; }
+    .fs-media-container {
+      width: 100vw; height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      position: relative; overflow: hidden;
+    }
+    .fs-media-container img, .fs-media-container video {
+      max-width: 100vw; max-height: 100vh;
+      width: 100%; height: 100%;
+      object-fit: contain;
+      transition: transform 0.3s var(--ease);
+    }
+    .fs-media-container img { cursor: zoom-in; }
+    .fs-media-container img.zoomed {
+      max-width: none; max-height: none;
+      width: auto; height: auto;
+      object-fit: initial;
+      cursor: zoom-out;
+      transform: scale(1.5);
+    }
+    .fs-close, .fs-prev, .fs-next {
+      position: absolute; background: rgba(255,255,255,0.25);
+      border: 1px solid rgba(255,255,255,0.4); color: white;
+      width: 48px; height: 48px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; cursor: pointer; transition: all .2s; z-index: 510;
+      backdrop-filter: blur(8px);
+    }
+    .fs-close:hover, .fs-prev:hover, .fs-next:hover { background: rgba(255,255,255,0.8); color: black; transform: scale(1.1); }
+    .fs-close { top: 24px; right: 24px; }
+    .fs-prev { left: 24px; top: 50%; transform: translateY(-50%); }
+    .fs-next { right: 24px; top: 50%; transform: translateY(-50%); }
+
+    .fs-caption-bar {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 30px 24px 20px; background: linear-gradient(transparent, rgba(0,0,0,0.85));
+      color: white; text-align: center; z-index: 505; pointer-events: none;
+    }
+    .fs-caption-bar h3 { font-family: 'Dancing Script', cursive; font-size: 32px; margin: 0 0 4px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+    .fs-caption-bar p { font-size: 13px; opacity: 0.85; margin: 0; }
+
     /* Print styles */
     @media print {
       body { background: white !important; color: black !important; }
@@ -1061,6 +1125,18 @@
       <source src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3" type="audio/mpeg">
     </audio>
     <iframe id="ytPlayer" width="0" height="0" style="display:none; width:0; height:0; border:none;" allow="autoplay"></iframe>
+  </div>
+
+  <!-- Fullscreen Immersive Photo Viewer -->
+  <div class="fullscreen-viewer" id="fullImageViewer">
+    <button class="fs-close" id="fsClose" title="Đóng toàn màn hình (Esc)">×</button>
+    <button class="fs-prev" id="fsPrev" title="Ảnh trước (‹)">‹</button>
+    <button class="fs-next" id="fsNext" title="Ảnh sau (›)">›</button>
+    <div class="fs-media-container" id="fsMediaContainer"></div>
+    <div class="fs-caption-bar" id="fsCaptionBar">
+      <h3 id="fsCaption">Chú thích</h3>
+      <p id="fsMeta">Ngày tháng · Vị trí</p>
+    </div>
   </div>
 
   <!-- Fullscreen Story Slideshow Overlay -->
@@ -1990,6 +2066,22 @@
       });
       card.appendChild(favBtn);
 
+      // Nút Xem Full Màn Hình
+      const fsBtn = document.createElement('button');
+      fsBtn.className = 'fs-btn-card';
+      fsBtn.innerHTML = '⛶';
+      fsBtn.title = 'Xem full màn hình';
+      fsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        let currentList = photos.filter(x => x.albumId === p.albumId).sort((a, b) => (b.date || 0) - (a.date || 0));
+        if (currentMediaFilter === 'image') currentList = currentList.filter(x => !x.resourceType || x.resourceType === 'image');
+        else if (currentMediaFilter === 'video') currentList = currentList.filter(x => x.resourceType === 'video');
+        else if (currentMediaFilter === 'favorite') currentList = currentList.filter(x => x.isFavorite);
+        const idx = currentList.findIndex(x => x.id === p.id);
+        openFullscreenViewer(currentList, idx >= 0 ? idx : 0);
+      });
+      card.appendChild(fsBtn);
+
       const tape = document.createElement('div'); tape.className = 'tape'; tape.textContent = '📌';
       card.appendChild(tape);
 
@@ -2500,43 +2592,166 @@
       renderPage();
     });
 
+    // Hàm dừng triệt để tất cả video & audio trong một container
+    function stopAllVideosInContainer(container) {
+      if (!container) return;
+      const videos = container.querySelectorAll('video');
+      videos.forEach(v => {
+        try {
+          v.pause();
+          v.currentTime = 0;
+          v.src = '';
+          v.removeAttribute('src');
+          v.load();
+        } catch (err) {}
+      });
+      const audios = container.querySelectorAll('audio');
+      audios.forEach(a => {
+        try {
+          a.pause();
+          a.currentTime = 0;
+          a.src = '';
+          a.removeAttribute('src');
+          a.load();
+        } catch (err) {}
+      });
+    }
+
     function closeLb() {
-      const videos = lbContent.querySelectorAll('video');
-      videos.forEach(v => { v.pause(); v.src = ''; v.load(); });
+      stopAllVideosInContainer(lbContent);
       const lbVoicePlayer = document.getElementById('lbVoicePlayer');
-      if (lbVoicePlayer) { lbVoicePlayer.pause(); lbVoicePlayer.currentTime = 0; }
+      if (lbVoicePlayer) { lbVoicePlayer.pause(); lbVoicePlayer.currentTime = 0; lbVoicePlayer.src = ''; }
 
       lightbox.classList.remove('open');
       document.body.style.overflow = '';
       lbIndex = -1;
 
-      if (document.fullscreenElement) {
-        document.exitFullscreen().catch(() => {});
+      if (document.fullscreenElement || document.webkitFullscreenElement) {
+        if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
       }
     }
 
     function stepLb(dir) {
       if (!lbList.length) return;
-      const videos = lbContent.querySelectorAll('video');
-      videos.forEach(v => { v.pause(); v.src = ''; });
+      stopAllVideosInContainer(lbContent);
       lbIndex = (lbIndex + dir + lbList.length) % lbList.length;
       showLb();
     }
 
-    function toggleFullscreenMedia() {
-      const mediaWrap = lbContent.querySelector('img') || lbContent.querySelector('video') || lbContent;
-      if (!document.fullscreenElement) {
-        if (mediaWrap.requestFullscreen) mediaWrap.requestFullscreen();
-        else if (mediaWrap.webkitRequestFullscreen) mediaWrap.webkitRequestFullscreen();
-        toast('Đã mở chế độ Full màn hình! 🖥️ Bấm Esc để thoát.');
+    // ---------------- Fullscreen Immersive Photo Viewer Logic ----------------
+    const fullImageViewer = document.getElementById('fullImageViewer');
+    const fsMediaContainer = document.getElementById('fsMediaContainer');
+    const fsCaption = document.getElementById('fsCaption');
+    const fsMeta = document.getElementById('fsMeta');
+    const fsClose = document.getElementById('fsClose');
+    const fsPrev = document.getElementById('fsPrev');
+    const fsNext = document.getElementById('fsNext');
+
+    let fsList = [];
+    let fsIndex = 0;
+
+    function openFullscreenViewer(photoList, index = 0) {
+      if (!photoList || !photoList.length) return;
+      stopAllVideosInContainer(lbContent);
+      fsList = photoList;
+      fsIndex = index;
+      fullImageViewer.classList.add('open');
+      document.body.style.overflow = 'hidden';
+
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        if (document.documentElement.requestFullscreen) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else if (document.documentElement.webkitRequestFullscreen) {
+          document.documentElement.webkitRequestFullscreen();
+        }
+      }
+
+      showFsItem();
+    }
+
+    function showFsItem() {
+      const p = fsList[fsIndex];
+      if (!p) return closeFullscreenViewer();
+      stopAllVideosInContainer(fsMediaContainer);
+      fsMediaContainer.innerHTML = '';
+
+      if (p.resourceType === 'video') {
+        const video = document.createElement('video');
+        video.src = p.dataUrl;
+        video.controls = true;
+        video.autoplay = true;
+        fsMediaContainer.appendChild(video);
       } else {
-        if (document.exitFullscreen) document.exitFullscreen();
+        const img = document.createElement('img');
+        img.src = p.dataUrl;
+        img.alt = p.name;
+        img.addEventListener('click', () => img.classList.toggle('zoomed'));
+        fsMediaContainer.appendChild(img);
+      }
+
+      fsCaption.textContent = p.caption || p.name;
+      fsMeta.textContent = new Date(p.date).toLocaleDateString('vi-VN') + (p.location && p.location.name ? ` · 📍 ${p.location.name}` : '');
+    }
+
+    function stepFsItem(dir) {
+      if (!fsList.length) return;
+      stopAllVideosInContainer(fsMediaContainer);
+      fsIndex = (fsIndex + dir + fsList.length) % fsList.length;
+      showFsItem();
+    }
+
+    function closeFullscreenViewer() {
+      stopAllVideosInContainer(fsMediaContainer);
+
+      fullImageViewer.classList.remove('open');
+      document.body.style.overflow = '';
+
+      if (document.fullscreenElement || document.webkitFullscreenElement) {
+        if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
       }
     }
 
+    fsClose.addEventListener('click', closeFullscreenViewer);
+    fsPrev.addEventListener('click', () => stepFsItem(-1));
+    fsNext.addEventListener('click', () => stepFsItem(1));
+
+    document.addEventListener('keydown', (e) => {
+      if (!fullImageViewer.classList.contains('open')) return;
+      if (e.key === 'Escape') closeFullscreenViewer();
+      if (e.key === 'ArrowLeft') stepFsItem(-1);
+      if (e.key === 'ArrowRight') stepFsItem(1);
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        if (fullImageViewer.classList.contains('open')) {
+          closeFullscreenViewer();
+        }
+      }
+    });
+
+    // Vuốt chuyển ảnh trên thiết bị di động
+    let touchStartX = 0;
+    function enableSwipeNavigation(container, onLeft, onRight) {
+      container.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
+      container.addEventListener('touchend', (e) => {
+        const diff = e.changedTouches[0].screenX - touchStartX;
+        if (Math.abs(diff) > 50) {
+          if (diff < 0) onLeft();
+          else onRight();
+        }
+      }, { passive: true });
+    }
+    enableSwipeNavigation(lightbox, () => stepLb(1), () => stepLb(-1));
+    enableSwipeNavigation(fullImageViewer, () => stepFsItem(1), () => stepFsItem(-1));
+
     const btnLbFullscreen = document.getElementById('btnLbFullscreen');
-    if (btnLbFullscreen) btnLbFullscreen.addEventListener('click', toggleFullscreenMedia);
-    lbContent.addEventListener('dblclick', toggleFullscreenMedia);
+    if (btnLbFullscreen) {
+      btnLbFullscreen.addEventListener('click', () => openFullscreenViewer(lbList, lbIndex));
+    }
+    lbContent.addEventListener('dblclick', () => openFullscreenViewer(lbList, lbIndex));
 
     lbClose.addEventListener('click', closeLb);
     lbPrev.addEventListener('click', () => stepLb(-1));
@@ -2615,12 +2830,15 @@
       document.getElementById('storyMeta').textContent = new Date(p.date).toLocaleDateString('vi-VN') + (p.location && p.location.name ? ` · 📍 ${p.location.name}` : '');
     }
 
-    document.getElementById('btnCloseStory').addEventListener('click', () => {
-      const wrap = document.getElementById('storyWrap');
-      const videos = wrap.querySelectorAll('video');
-      videos.forEach(v => { v.pause(); v.src = ''; });
+    function closeStoryOverlay() {
+      stopAllVideosInContainer(document.getElementById('storyWrap'));
       storyOverlay.classList.remove('open');
       clearInterval(storyTimer);
+    }
+
+    document.getElementById('btnCloseStory').addEventListener('click', closeStoryOverlay);
+    storyOverlay.addEventListener('click', (e) => {
+      if (e.target === storyOverlay) closeStoryOverlay();
     });
 
     // ---------------- Karaoke Studio Logic ----------------
@@ -2654,6 +2872,18 @@
       'yt_conmuatinhyeu': { type: 'yt', id: 'V6vCae7nK2k', url: 'https://www.youtube.com/watch?v=V6vCae7nK2k' }
     };
 
+    function stopKaraokePlayback() {
+      stopKaraokeRecordingSilently();
+      if (karaokeAudioBeat) {
+        karaokeAudioBeat.pause();
+        karaokeAudioBeat.currentTime = 0;
+        karaokeAudioBeat.src = '';
+      }
+      if (karaokeYtFrame) {
+        karaokeYtFrame.src = '';
+      }
+    }
+
     btnOpenKaraoke.addEventListener('click', () => {
       karaokeModal.classList.add('open');
       setKaraokeBeat('lofi');
@@ -2661,8 +2891,14 @@
     
     btnCloseKaraoke.addEventListener('click', () => {
       karaokeModal.classList.remove('open');
-      stopKaraokeRecordingSilently();
-      karaokeAudioBeat.pause();
+      stopKaraokePlayback();
+    });
+
+    karaokeModal.addEventListener('click', (e) => {
+      if (e.target === karaokeModal) {
+        karaokeModal.classList.remove('open');
+        stopKaraokePlayback();
+      }
     });
 
     karaokeBeatSelect.addEventListener('change', () => {
