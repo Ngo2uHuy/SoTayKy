@@ -361,6 +361,74 @@
 
     .loading-state { text-align: center; padding: 60px 20px; font-size: 14px; color: var(--accent); animation: pulseHeart 1.5s infinite; }
 
+    /* ============ Filter Bar & Badges ============ */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 16px 0 20px;
+      flex-wrap: wrap;
+    }
+    .filter-btn {
+      background: rgba(255, 255, 255, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.85);
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-light);
+      cursor: pointer;
+      transition: all 0.2s var(--ease);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      user-select: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .filter-btn:hover {
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--accent);
+      transform: translateY(-1px);
+    }
+    .filter-btn.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(255, 128, 171, 0.4);
+    }
+    .filter-count {
+      font-size: 11px;
+      opacity: 0.85;
+      background: rgba(0, 0, 0, 0.08);
+      padding: 2px 7px;
+      border-radius: 10px;
+    }
+    .filter-btn.active .filter-count {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    @keyframes pulseNewBadge {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+    .new-badge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: linear-gradient(135deg, #ff4081, #ff80ab);
+      color: white;
+      font-weight: 700;
+      font-size: 10px;
+      letter-spacing: 0.5px;
+      padding: 3px 8px;
+      border-radius: 10px;
+      box-shadow: 0 3px 8px rgba(255, 64, 129, 0.4);
+      z-index: 6;
+      animation: pulseNewBadge 2s infinite ease-in-out;
+      pointer-events: none;
+    }
+
     /* ============ Lightbox ============ */
     .lightbox {
       position: fixed; inset: 0; z-index: 100;
@@ -540,6 +608,7 @@
       let lbIndex = -1;
       let isSelectMode = false;
       let selectedPhotos = new Set();
+      let currentMediaFilter = 'all'; // 'all' | 'image' | 'video'
 
       // Drag-to-scroll variables for desktop
       let isDown = false;
@@ -595,6 +664,7 @@
               return;
             }
             currentAlbumId = a.id;
+            currentMediaFilter = 'all';
             isSelectMode = false;
             selectedPhotos.clear();
             updateSelectionBar();
@@ -648,9 +718,16 @@
 
         const album = albums.find(a => a.id === currentAlbumId) || albums[0];
         currentAlbumId = album.id;
-        const albumPhotos = photos.filter(p => p.albumId === album.id).sort((a, b) => b.date - a.date);
-        const albumImgCount = albumPhotos.filter(p => !p.resourceType || p.resourceType === 'image').length;
-        const albumVidCount = albumPhotos.filter(p => p.resourceType === 'video').length;
+        
+        // Tất cả media trong album, sắp xếp MỚI NHẤT LÊN ĐẦU
+        const allAlbumPhotos = photos
+          .filter(p => p.albumId === album.id)
+          .sort((a, b) => (b.date || 0) - (a.date || 0));
+
+        const albumImgCount = allAlbumPhotos.filter(p => !p.resourceType || p.resourceType === 'image').length;
+        const albumVidCount = allAlbumPhotos.filter(p => p.resourceType === 'video').length;
+        const albumTotalCount = allAlbumPhotos.length;
+
         let albumCountText = '';
         if (albumImgCount > 0 && albumVidCount > 0) {
           albumCountText = `${albumImgCount} ảnh, ${albumVidCount} video`;
@@ -662,8 +739,8 @@
 
         const head = document.createElement('div');
         head.className = 'page-head';
-        const btnText = isSelectMode ? 'Hủy chọn' : 'Chọn nhiều ảnh';
-        const selectBtnHTML = albumPhotos.length > 0 ? `<button class="btn ghost" id="btnToggleSelect" style="padding: 4px 12px; font-size: 12px;">${btnText}</button>` : '';
+        const btnText = isSelectMode ? 'Hủy chọn' : 'Chọn nhiều tệp';
+        const selectBtnHTML = albumTotalCount > 0 ? `<button class="btn ghost" id="btnToggleSelect" style="padding: 4px 12px; font-size: 12px;">${btnText}</button>` : '';
         head.innerHTML =
           '<h2 class="page-title"><span class="dot" style="background:' + album.color + '"></span>' +
           '<span class="album-name-text">' + escapeHtml(album.name) + '</span>' +
@@ -716,17 +793,49 @@
           });
         }
 
-        if (albumPhotos.length > 0) {
+        if (albumTotalCount > 0) {
           document.getElementById('btnToggleSelect').addEventListener('click', () => {
             isSelectMode = !isSelectMode;
             if (!isSelectMode) selectedPhotos.clear();
             updateSelectionBar();
             renderPage();
           });
+
+          // Thanh bộ lọc Ảnh & Video
+          const filterBar = document.createElement('div');
+          filterBar.className = 'filter-bar';
+
+          const filters = [
+            { id: 'all', label: 'Tất cả', count: albumTotalCount, icon: '✨' },
+            { id: 'image', label: 'Ảnh', count: albumImgCount, icon: '📷' },
+            { id: 'video', label: 'Video', count: albumVidCount, icon: '🎥' }
+          ];
+
+          filters.forEach(f => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'filter-btn' + (currentMediaFilter === f.id ? ' active' : '');
+            btn.innerHTML = `<span>${f.icon} ${f.label}</span> <span class="filter-count">${f.count}</span>`;
+            btn.addEventListener('click', () => {
+              currentMediaFilter = f.id;
+              renderPage();
+            });
+            filterBar.appendChild(btn);
+          });
+
+          pageArea.appendChild(filterBar);
+        }
+
+        // Lọc danh sách theo bộ lọc đang chọn
+        let albumPhotos = allAlbumPhotos;
+        if (currentMediaFilter === 'image') {
+          albumPhotos = allAlbumPhotos.filter(p => !p.resourceType || p.resourceType === 'image');
+        } else if (currentMediaFilter === 'video') {
+          albumPhotos = allAlbumPhotos.filter(p => p.resourceType === 'video');
         }
 
         if (albumPhotos.length > 0) {
-          const sliderPhotos = albumPhotos.slice(0, 5); // Hiển thị 5 ảnh mới nhất
+          const sliderPhotos = albumPhotos.slice(0, 5); // Hiển thị 5 ảnh/video mới nhất theo bộ lọc
           const sliderWrap = document.createElement('div');
           sliderWrap.className = 'album-slider';
           
@@ -788,11 +897,42 @@
         const grid = document.createElement('div');
         grid.className = 'scrapbook';
 
+        if (albumPhotos.length === 0 && allAlbumPhotos.length > 0) {
+          const emptyFilter = document.createElement('div');
+          emptyFilter.style.gridColumn = '1 / -1';
+          emptyFilter.style.textAlign = 'center';
+          emptyFilter.style.padding = '40px 20px';
+          emptyFilter.style.color = 'var(--text-light)';
+          emptyFilter.innerHTML = `
+            <p style="font-size: 15px; margin-bottom: 12px;">Không tìm thấy ${currentMediaFilter === 'video' ? 'video' : 'ảnh'} nào trong album này.</p>
+            <button class="btn ghost" id="btnResetFilter" style="font-size: 12px; padding: 6px 16px;">Hiển thị tất cả (${allAlbumPhotos.length})</button>
+          `;
+          grid.appendChild(emptyFilter);
+          setTimeout(() => {
+            const btnRst = document.getElementById('btnResetFilter');
+            if (btnRst) {
+              btnRst.addEventListener('click', () => {
+                currentMediaFilter = 'all';
+                renderPage();
+              });
+            }
+          }, 0);
+        }
+
         albumPhotos.forEach((p, i) => {
           const rot = TILT[i % TILT.length];
           const card = document.createElement('div');
           card.className = 'polaroid' + (selectedPhotos.has(p.id) ? ' selected' : '');
           card.style.transform = 'rotate(' + rot + 'deg)';
+
+          // Kiểm tra nếu mới thêm trong vòng 24 giờ -> Hiển thị huy hiệu "NEW ✨"
+          const isNew = (Date.now() - (p.date || 0)) < 24 * 60 * 60 * 1000;
+          if (isNew) {
+            const badge = document.createElement('span');
+            badge.className = 'new-badge';
+            badge.textContent = 'NEW ✨';
+            card.appendChild(badge);
+          }
 
           const tape = document.createElement('div');
           tape.className = 'tape';
@@ -1115,7 +1255,13 @@
 
       // ---------------- Lightbox ----------------
       function openLightbox(albumId, photoId) {
-        lbList = photos.filter(p => p.albumId === albumId).sort((a, b) => b.date - a.date);
+        let list = photos.filter(p => p.albumId === albumId).sort((a, b) => (b.date || 0) - (a.date || 0));
+        if (currentMediaFilter === 'image') {
+          list = list.filter(p => !p.resourceType || p.resourceType === 'image');
+        } else if (currentMediaFilter === 'video') {
+          list = list.filter(p => p.resourceType === 'video');
+        }
+        lbList = list;
         lbIndex = lbList.findIndex(p => p.id === photoId);
         showLb();
         lightbox.classList.add('open');
