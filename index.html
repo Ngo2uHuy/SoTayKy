@@ -977,6 +977,7 @@
         <h1 class="cover-title">Nhật Ký Tình Yêu <span class="cover-count" id="totalCount">0 ảnh · 0 album</span></h1>
       </div>
       <div class="header-actions">
+        <button class="btn-icon-setting" id="btnOpenKaraoke" title="Phòng Hát Karaoke 🎤">🎤</button>
         <button class="btn-icon-setting" id="btnOpenWheel" title="Vòng Quay Kỷ Niệm 🎯">🎯</button>
         <button class="btn-icon-setting" id="btnOpenFlipbook" title="Trình Lật Sách 3D 📖">📖</button>
         <button class="btn-icon-setting" id="btnInstallPWA" title="Cài đặt App 📱" style="display:none;">📱</button>
@@ -1073,6 +1074,42 @@
       <div class="lb-comment-input-wrap">
         <input type="text" id="lbNewCommentInput" placeholder="Nhắn gửi lời chúc hoặc cảm xúc...">
         <button class="btn" id="btnSendComment" style="padding: 4px 14px; font-size: 12px;">Gửi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Karaoke Studio Modal -->
+  <div class="modal-overlay" id="karaokeModal">
+    <div class="modal-card" style="max-width: 600px; text-align: center;">
+      <button class="modal-close-btn" id="btnCloseKaraoke">×</button>
+      <h2 class="modal-title">Phòng Hát Karaoke Kỷ Niệm 🎤</h2>
+      <p style="font-size: 13px; color: var(--text-light); margin-bottom: 12px;">Hát theo Beat nhạc và ghi âm lại giọng hát ngọt ngào của bạn!</p>
+
+      <div class="form-group" style="text-align: left;">
+        <label>🎶 Chọn Beat Karaoke / Dán link YouTube:</label>
+        <select id="karaokeBeatSelect" style="margin-bottom: 8px;">
+          <option value="https://www.youtube.com/embed/5-sw6ZgJ40g">🎵 Nơi Này Có Anh — Son Tung M-TP (Karaoke Beat)</option>
+          <option value="https://www.youtube.com/embed/1v0Q-K4a0h4">🎵 Cơn Mưa Tình Yêu — Hà Anh Tuấn ft. Phương Linh (Karaoke Beat)</option>
+          <option value="custom">🔗 Dán Link YouTube Beat Khác...</option>
+        </select>
+        <input type="text" id="karaokeCustomYtUrl" placeholder="Dán link YouTube (VD: https://youtube.com/watch?v=...)" style="display: none; margin-bottom: 8px;">
+      </div>
+
+      <!-- Karaoke Player Screen -->
+      <iframe id="karaokeYtFrame" width="100%" height="220" style="border-radius: 12px; border: 1px solid var(--glass-border); margin-bottom: 12px;" allow="autoplay" src="https://www.youtube.com/embed/5-sw6ZgJ40g"></iframe>
+
+      <!-- Studio Recording UI -->
+      <div style="background: rgba(255,255,255,0.6); padding: 16px; border-radius: 16px; border: 1px dashed var(--accent); margin-bottom: 12px;">
+        <div id="karaokeRecordTimer" style="font-size: 24px; font-weight: 700; color: var(--accent); margin-bottom: 6px;">00:00</div>
+        
+        <div style="display: flex; gap: 8px; justify-content: center; margin-bottom: 10px;">
+          <button class="btn" id="btnStartKaraokeRecord" style="background: linear-gradient(135deg, #ff4081, #ff80ab); padding: 10px 24px;">🎙️ Bắt Đầu Hát & Thu Âm</button>
+          <button class="btn" id="btnStopKaraokeRecord" style="background: var(--danger); display: none; padding: 10px 24px;">⏹️ Dừng Thu Âm</button>
+        </div>
+
+        <audio id="karaokeAudioPreview" controls style="width: 100%; display: none; margin-top: 10px;"></audio>
+        <input type="text" id="karaokeSongTitle" placeholder="Đặt tên bản thu (VD: Cơn Mưa Tình Yêu - Giọng hát của Anh/Em)..." style="width: 100%; padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.15); margin-top: 10px; display: none; outline: none;">
+        <button class="btn" id="btnSaveKaraokeSong" style="width: 100%; margin-top: 10px; display: none; background: linear-gradient(135deg, #00acc1, #00838f); padding: 10px 20px;">💾 Lưu Bài Hát Vào Album Kỷ Niệm</button>
       </div>
     </div>
   </div>
@@ -1543,6 +1580,7 @@
       const head = document.createElement('div');
       head.className = 'page-head';
       const btnText = isSelectMode ? 'Hủy chọn' : 'Chọn nhiều tệp';
+      const addBtnHTML = `<button class="btn" id="btnUploadHeader" style="padding: 5px 14px; font-size: 12px; background: linear-gradient(135deg, var(--accent), var(--accent-hover)); shadow: 0 4px 10px rgba(255,128,171,0.4);">➕ Thêm khoảnh khắc mới</button>`;
       const selectBtnHTML = albumTotalCount > 0 ? `<button class="btn ghost" id="btnToggleSelect" style="padding: 4px 12px; font-size: 12px;">${btnText}</button>` : '';
       const storyBtnHTML = albumTotalCount > 0 ? `<button class="btn" id="btnStartStory" style="padding: 4px 12px; font-size: 12px; background: linear-gradient(135deg, #ff4081, #ff80ab);">🎬 Trình chiếu</button>` : '';
 
@@ -1551,9 +1589,13 @@
         '<span class="album-name-text">' + escapeHtml(album.name) + '</span>' +
         '<span class="btn-rename-album" title="Sửa tên album" style="font-size: 18px; cursor: pointer; opacity: 0.6; margin-left: 8px;">✏️</span></h2>' +
         '<div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">' +
-        storyBtnHTML + selectBtnHTML +
+        addBtnHTML + storyBtnHTML + selectBtnHTML +
         '</div>';
       pageArea.appendChild(head);
+
+      if (head.querySelector('#btnUploadHeader')) {
+        head.querySelector('#btnUploadHeader').addEventListener('click', () => fileInput.click());
+      }
 
       if (head.querySelector('#btnStartStory')) {
         head.querySelector('#btnStartStory').addEventListener('click', () => startStoryMode(allAlbumPhotos));
@@ -1798,16 +1840,6 @@
           grid.appendChild(createPolaroidCard(p, i));
         });
 
-        const addTile = document.createElement('div');
-        addTile.className = 'add-photo-tile';
-        addTile.innerHTML = '<span class="plus">💖</span><span>Thêm khoảnh khắc mới</span>';
-        addTile.addEventListener('click', () => fileInput.click());
-        ['dragenter', 'dragover'].forEach(evt => addTile.addEventListener(evt, e => { e.preventDefault(); addTile.classList.add('drag-over'); }));
-        ['dragleave', 'drop'].forEach(evt => addTile.addEventListener(evt, e => { e.preventDefault(); addTile.classList.remove('drag-over'); }));
-        addTile.addEventListener('drop', (e) => {
-          if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
-        });
-        grid.appendChild(addTile);
         container.appendChild(grid);
       } else {
         // Timeline View
@@ -2423,6 +2455,132 @@
     document.getElementById('btnCloseStory').addEventListener('click', () => {
       storyOverlay.classList.remove('open');
       clearInterval(storyTimer);
+    });
+
+    // ---------------- Karaoke Studio Logic ----------------
+    const karaokeModal = document.getElementById('karaokeModal');
+    const btnOpenKaraoke = document.getElementById('btnOpenKaraoke');
+    const btnCloseKaraoke = document.getElementById('btnCloseKaraoke');
+    const karaokeBeatSelect = document.getElementById('karaokeBeatSelect');
+    const karaokeCustomYtUrl = document.getElementById('karaokeCustomYtUrl');
+    const karaokeYtFrame = document.getElementById('karaokeYtFrame');
+
+    const btnStartKaraokeRecord = document.getElementById('btnStartKaraokeRecord');
+    const btnStopKaraokeRecord = document.getElementById('btnStopKaraokeRecord');
+    const karaokeRecordTimer = document.getElementById('karaokeRecordTimer');
+    const karaokeAudioPreview = document.getElementById('karaokeAudioPreview');
+    const karaokeSongTitle = document.getElementById('karaokeSongTitle');
+    const btnSaveKaraokeSong = document.getElementById('btnSaveKaraokeSong');
+
+    let karaokeRecorder = null;
+    let karaokeChunks = [];
+    let karaokeTimerInterval = null;
+    let karaokeSeconds = 0;
+    let karaokeRecordedDataUrl = '';
+
+    btnOpenKaraoke.addEventListener('click', () => karaokeModal.classList.add('open'));
+    btnCloseKaraoke.addEventListener('click', () => {
+      karaokeModal.classList.remove('open');
+      stopKaraokeRecordingSilently();
+    });
+
+    karaokeBeatSelect.addEventListener('change', () => {
+      const val = karaokeBeatSelect.value;
+      if (val === 'custom') {
+        karaokeCustomYtUrl.style.display = 'block';
+      } else {
+        karaokeCustomYtUrl.style.display = 'none';
+        karaokeYtFrame.src = val;
+      }
+    });
+
+    karaokeCustomYtUrl.addEventListener('change', () => {
+      const ytId = parseYouTubeId(karaokeCustomYtUrl.value.trim());
+      if (ytId) {
+        karaokeYtFrame.src = `https://www.youtube.com/embed/${ytId}?autoplay=1`;
+      } else {
+        toast('Link YouTube không hợp lệ!');
+      }
+    });
+
+    btnStartKaraokeRecord.addEventListener('click', async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        karaokeRecorder = new MediaRecorder(stream);
+        karaokeChunks = [];
+
+        karaokeRecorder.ondataavailable = e => karaokeChunks.push(e.data);
+        karaokeRecorder.onstop = () => {
+          const blob = new Blob(karaokeChunks, { type: 'audio/webm' });
+          const reader = new FileReader();
+          reader.readAsDataURL(blob);
+          reader.onloadend = () => {
+            karaokeRecordedDataUrl = reader.result;
+            karaokeAudioPreview.src = karaokeRecordedDataUrl;
+            karaokeAudioPreview.style.display = 'block';
+            karaokeSongTitle.style.display = 'block';
+            btnSaveKaraokeSong.style.display = 'block';
+            toast('Đã thu âm xong! Bấm nghe lại hoặc lưu bài hát vào album.');
+          };
+          stream.getTracks().forEach(t => t.stop());
+        };
+
+        karaokeRecorder.start();
+        btnStartKaraokeRecord.style.display = 'none';
+        btnStopKaraokeRecord.style.display = 'inline-flex';
+        karaokeSeconds = 0;
+        karaokeRecordTimer.textContent = '00:00';
+
+        karaokeTimerInterval = setInterval(() => {
+          karaokeSeconds++;
+          const mins = String(Math.floor(karaokeSeconds / 60)).padStart(2, '0');
+          const secs = String(karaokeSeconds % 60).padStart(2, '0');
+          karaokeRecordTimer.textContent = `${mins}:${secs}`;
+        }, 1000);
+
+        toast('🎙️ Đang thu âm giọng hát Karaoke...');
+      } catch (e) {
+        toast('Không thể kết nối Micro thiết bị!');
+      }
+    });
+
+    btnStopKaraokeRecord.addEventListener('click', () => {
+      stopKaraokeRecordingSilently();
+    });
+
+    function stopKaraokeRecordingSilently() {
+      if (karaokeTimerInterval) clearInterval(karaokeTimerInterval);
+      if (karaokeRecorder && karaokeRecorder.state !== 'inactive') {
+        karaokeRecorder.stop();
+      }
+      btnStartKaraokeRecord.style.display = 'inline-flex';
+      btnStopKaraokeRecord.style.display = 'none';
+    }
+
+    btnSaveKaraokeSong.addEventListener('click', async () => {
+      if (!karaokeRecordedDataUrl) return;
+      const titleVal = karaokeSongTitle.value.trim() || 'Bài Hát Karaoke 🎤';
+      
+      const newPhoto = {
+        id: uid(),
+        albumId: currentAlbumId || (albums[0] ? albums[0].id : 'default'),
+        name: titleVal,
+        dataUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80',
+        width: 600,
+        height: 600,
+        size: Math.round(karaokeRecordedDataUrl.length * 0.75),
+        date: Date.now(),
+        caption: titleVal + ' 🎤',
+        resourceType: 'image',
+        isFavorite: true,
+        location: { name: 'Phòng Hát Karaoke', lat: null, lng: null },
+        audioData: karaokeRecordedDataUrl
+      };
+
+      await savePhoto(newPhoto);
+      toast('Đã lưu bài hát Karaoke vào Album kỷ niệm! 🎤💖');
+      karaokeModal.classList.remove('open');
+      renderPage();
     });
 
     // ---------------- Wheel of Fortune Modal ----------------
