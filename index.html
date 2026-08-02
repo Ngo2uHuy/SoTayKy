@@ -1080,31 +1080,43 @@
 
   <!-- Karaoke Studio Modal -->
   <div class="modal-overlay" id="karaokeModal">
-    <div class="modal-card" style="max-width: 600px; text-align: center;">
+    <div class="modal-card" style="max-width: 620px; text-align: center;">
       <button class="modal-close-btn" id="btnCloseKaraoke">×</button>
       <h2 class="modal-title">Phòng Hát Karaoke Kỷ Niệm 🎤</h2>
       <p style="font-size: 13px; color: var(--text-light); margin-bottom: 12px;">Hát theo Beat nhạc và ghi âm lại giọng hát ngọt ngào của bạn!</p>
 
       <div class="form-group" style="text-align: left;">
-        <label>🎶 Chọn Beat Karaoke / Dán link YouTube:</label>
+        <label>🎶 Chọn Beat Karaoke / Tệp Nhạc:</label>
         <select id="karaokeBeatSelect" style="margin-bottom: 8px;">
-          <option value="https://www.youtube.com/embed/5-sw6ZgJ40g">🎵 Nơi Này Có Anh — Son Tung M-TP (Karaoke Beat)</option>
-          <option value="https://www.youtube.com/embed/1v0Q-K4a0h4">🎵 Cơn Mưa Tình Yêu — Hà Anh Tuấn ft. Phương Linh (Karaoke Beat)</option>
-          <option value="custom">🔗 Dán Link YouTube Beat Khác...</option>
+          <option value="lofi">🎵 Nhạc Beat Lo-Fi Sổ Tay (Khuyên dùng - Không bị chặn)</option>
+          <option value="yt_noinaycoanh">🎵 Nơi Này Có Anh — Beat Karaoke</option>
+          <option value="yt_conmuatinhyeu">🎵 Cơn Mưa Tình Yêu — Beat Karaoke</option>
+          <option value="custom_yt">🔗 Dán Link YouTube Karaoke Khác...</option>
+          <option value="local_mp3">📁 Tải Tệp Beat MP3 Từ Máy Tính...</option>
         </select>
+
         <input type="text" id="karaokeCustomYtUrl" placeholder="Dán link YouTube (VD: https://youtube.com/watch?v=...)" style="display: none; margin-bottom: 8px;">
+        <input type="file" id="karaokeMp3Input" accept="audio/*" style="display: none; margin-bottom: 8px;">
       </div>
 
-      <!-- Karaoke Player Screen -->
-      <iframe id="karaokeYtFrame" width="100%" height="220" style="border-radius: 12px; border: 1px solid var(--glass-border); margin-bottom: 12px;" allow="autoplay" src="https://www.youtube.com/embed/5-sw6ZgJ40g"></iframe>
+      <!-- Karaoke Beat Players -->
+      <div id="karaokePlayerContainer" style="margin-bottom: 12px;">
+        <!-- HTML5 Audio Player for Lo-Fi / Custom MP3 -->
+        <audio id="karaokeAudioBeat" controls loop style="width: 100%; border-radius: 12px; background: #f1f3f4;"></audio>
+        <!-- YouTube Frame -->
+        <div id="ytFrameWrap" style="display: none;">
+          <iframe id="karaokeYtFrame" width="100%" height="220" style="border-radius: 12px; border: 1px solid var(--glass-border);" allow="autoplay; encrypted-media"></iframe>
+          <a id="btnOpenYtTab" href="#" target="_blank" class="btn ghost" style="display: inline-flex; margin-top: 6px; font-size: 12px; padding: 4px 12px;">▶️ Mở Beat trên tab YouTube (Nếu bị chặn video)</a>
+        </div>
+      </div>
 
       <!-- Studio Recording UI -->
       <div style="background: rgba(255,255,255,0.6); padding: 16px; border-radius: 16px; border: 1px dashed var(--accent); margin-bottom: 12px;">
-        <div id="karaokeRecordTimer" style="font-size: 24px; font-weight: 700; color: var(--accent); margin-bottom: 6px;">00:00</div>
+        <div id="karaokeRecordTimer" style="font-size: 26px; font-weight: 700; color: var(--accent); margin-bottom: 6px;">00:00</div>
         
         <div style="display: flex; gap: 8px; justify-content: center; margin-bottom: 10px;">
-          <button class="btn" id="btnStartKaraokeRecord" style="background: linear-gradient(135deg, #ff4081, #ff80ab); padding: 10px 24px;">🎙️ Bắt Đầu Hát & Thu Âm</button>
-          <button class="btn" id="btnStopKaraokeRecord" style="background: var(--danger); display: none; padding: 10px 24px;">⏹️ Dừng Thu Âm</button>
+          <button class="btn" id="btnStartKaraokeRecord" style="background: linear-gradient(135deg, #ff4081, #ff80ab); padding: 10px 24px; font-size: 15px;">🎙️ Bắt Đầu Hát & Thu Âm</button>
+          <button class="btn" id="btnStopKaraokeRecord" style="background: var(--danger); display: none; padding: 10px 24px; font-size: 15px;">⏹️ Dừng Thu Âm</button>
         </div>
 
         <audio id="karaokeAudioPreview" controls style="width: 100%; display: none; margin-top: 10px;"></audio>
@@ -2463,7 +2475,11 @@
     const btnCloseKaraoke = document.getElementById('btnCloseKaraoke');
     const karaokeBeatSelect = document.getElementById('karaokeBeatSelect');
     const karaokeCustomYtUrl = document.getElementById('karaokeCustomYtUrl');
+    const karaokeMp3Input = document.getElementById('karaokeMp3Input');
+    const karaokeAudioBeat = document.getElementById('karaokeAudioBeat');
+    const ytFrameWrap = document.getElementById('ytFrameWrap');
     const karaokeYtFrame = document.getElementById('karaokeYtFrame');
+    const btnOpenYtTab = document.getElementById('btnOpenYtTab');
 
     const btnStartKaraokeRecord = document.getElementById('btnStartKaraokeRecord');
     const btnStopKaraokeRecord = document.getElementById('btnStopKaraokeRecord');
@@ -2478,28 +2494,73 @@
     let karaokeSeconds = 0;
     let karaokeRecordedDataUrl = '';
 
-    btnOpenKaraoke.addEventListener('click', () => karaokeModal.classList.add('open'));
+    const KARAOKE_PRESETS = {
+      'lofi': { type: 'audio', url: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3' },
+      'yt_noinaycoanh': { type: 'yt', id: '506nBLtTtrU', url: 'https://www.youtube.com/watch?v=506nBLtTtrU' },
+      'yt_conmuatinhyeu': { type: 'yt', id: 'V6vCae7nK2k', url: 'https://www.youtube.com/watch?v=V6vCae7nK2k' }
+    };
+
+    btnOpenKaraoke.addEventListener('click', () => {
+      karaokeModal.classList.add('open');
+      setKaraokeBeat('lofi');
+    });
+    
     btnCloseKaraoke.addEventListener('click', () => {
       karaokeModal.classList.remove('open');
       stopKaraokeRecordingSilently();
+      karaokeAudioBeat.pause();
     });
 
     karaokeBeatSelect.addEventListener('change', () => {
       const val = karaokeBeatSelect.value;
-      if (val === 'custom') {
-        karaokeCustomYtUrl.style.display = 'block';
-      } else {
-        karaokeCustomYtUrl.style.display = 'none';
-        karaokeYtFrame.src = val;
+      karaokeCustomYtUrl.style.display = (val === 'custom_yt') ? 'block' : 'none';
+      karaokeMp3Input.style.display = (val === 'local_mp3') ? 'block' : 'none';
+
+      if (val === 'local_mp3') {
+        karaokeMp3Input.click();
+      } else if (val !== 'custom_yt') {
+        setKaraokeBeat(val);
       }
     });
 
+    function setKaraokeBeat(presetKey) {
+      const p = KARAOKE_PRESETS[presetKey];
+      if (!p) return;
+      if (p.type === 'audio') {
+        ytFrameWrap.style.display = 'none';
+        karaokeAudioBeat.style.display = 'block';
+        karaokeAudioBeat.src = p.url;
+      } else if (p.type === 'yt') {
+        karaokeAudioBeat.pause();
+        karaokeAudioBeat.style.display = 'none';
+        ytFrameWrap.style.display = 'block';
+        karaokeYtFrame.src = `https://www.youtube.com/embed/${p.id}?autoplay=1`;
+        btnOpenYtTab.href = p.url;
+      }
+    }
+
     karaokeCustomYtUrl.addEventListener('change', () => {
-      const ytId = parseYouTubeId(karaokeCustomYtUrl.value.trim());
+      const rawUrl = karaokeCustomYtUrl.value.trim();
+      const ytId = parseYouTubeId(rawUrl);
       if (ytId) {
+        karaokeAudioBeat.pause();
+        karaokeAudioBeat.style.display = 'none';
+        ytFrameWrap.style.display = 'block';
         karaokeYtFrame.src = `https://www.youtube.com/embed/${ytId}?autoplay=1`;
+        btnOpenYtTab.href = rawUrl;
       } else {
         toast('Link YouTube không hợp lệ!');
+      }
+    });
+
+    karaokeMp3Input.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (file) {
+        const fileUrl = URL.createObjectURL(file);
+        ytFrameWrap.style.display = 'none';
+        karaokeAudioBeat.style.display = 'block';
+        karaokeAudioBeat.src = fileUrl;
+        toast('Đã tải Beat MP3! Bấm ▶️ trên trình phát để nghe thử.');
       }
     });
 
@@ -2526,6 +2587,10 @@
         };
 
         karaokeRecorder.start();
+        if (karaokeAudioBeat.style.display !== 'none' && karaokeAudioBeat.src) {
+          karaokeAudioBeat.play();
+        }
+
         btnStartKaraokeRecord.style.display = 'none';
         btnStopKaraokeRecord.style.display = 'inline-flex';
         karaokeSeconds = 0;
@@ -2553,6 +2618,7 @@
       if (karaokeRecorder && karaokeRecorder.state !== 'inactive') {
         karaokeRecorder.stop();
       }
+      karaokeAudioBeat.pause();
       btnStartKaraokeRecord.style.display = 'inline-flex';
       btnStopKaraokeRecord.style.display = 'none';
     }
